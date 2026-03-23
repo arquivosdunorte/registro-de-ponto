@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ponto SaaS Ultra</title>
+<style>
+body{margin:0;font-family:Arial;background:#eef2f7}
+.sidebar{width:230px;height:100vh;background:#1e3a5f;color:#fff;position:fixed;padding:15px}
+.sidebar button{width:100%;margin:4px 0;padding:10px;border:none;background:#2c5d8f;color:#fff}
+.main{margin-left:250px;padding:15px}
+.card{background:#fff;padding:15px;border-radius:8px;margin-bottom:15px}
+input,select{width:100%;padding:8px;margin:4px 0}
+table{width:100%;border-collapse:collapse}
+td{border:1px solid #ccc;padding:5px;text-align:center}
+.falta{background:#ffb3b3}
+.atestado{background:#ffe0b3}
+.feriado{background:#cce5ff}
+.normal{background:#e6ffe6}
+@media(max-width:768px){.sidebar{position:relative;width:100%;height:auto}.main{margin-left:0}}
+</style>
+</head>
+<body>
+
+<div id="login" style="display:flex;height:100vh;justify-content:center;align-items:center">
+<div class="card">
+<h3>Login</h3>
+<input id="user"><input id="pass" type="password">
+<button onclick="login()">Entrar</button>
+</div>
+</div>
+
+<div id="app" class="hidden">
+<div class="sidebar">
+<button onclick="show('dash')">Dashboard</button>
+<button onclick="show('cal')">Calendário</button>
+<button onclick="show('folha')">Folha</button>
+<button onclick="logout()">Sair</button>
+</div>
+
+<div class="main">
+
+<div id="dash" class="card">
+<h2>Dashboard Financeiro</h2>
+<canvas id="graf"></canvas>
+</div>
+
+<div id="cal" class="card hidden">
+<h2>Calendário</h2>
+<input type="month" id="mes">
+<button onclick="cal()">Gerar</button>
+<table id="tbl"></table>
+</div>
+
+<div id="folha" class="card hidden">
+<h2>Folha Pagamento</h2>
+<select id="func"></select>
+<button onclick="calcFolha()">Calcular</button>
+<div id="res"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+// LOGIN COM PERFIL
+function login(){
+let users=[{u:'admin',p:'1234',perfil:'admin'},{u:'func',p:'1234',perfil:'func'}]
+let u=users.find(x=>x.u==user.value&&x.p==pass.value)
+if(u){localStorage.setItem('user',JSON.stringify(u));init()}}
+function logout(){localStorage.clear();location.reload()}
+function init(){login.style.display='none';app.classList.remove('hidden');load();}
+if(localStorage.getItem('user'))init()
+
+function show(id){document.querySelectorAll('.card').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden')}
+
+// CALENDÁRIO COLORIDO
+function cal(){
+let m=mes.value.split('-');let d=new Date(m[0],m[1],0).getDate()
+let html='<tr>'
+for(let i=1;i<=d;i++){
+let tipo=['normal','falta','atestado','feriado'][Math.floor(Math.random()*4)]
+html+=`<td class='${tipo}'>${i}</td>`}
+html+='</tr>'
+tbl.innerHTML=html}
+
+// DASHBOARD GRAFICO
+function load(){
+let c=graf.getContext('2d')
+c.clearRect(0,0,300,150)
+let vals=[120,150,180]
+vals.forEach((v,i)=>{c.fillRect(i*60,150-v,40,v)})
+}
+
+// FOLHA PAGAMENTO
+function calcFolha(){
+let salario=2000
+let horas=180
+let extra=horas-160
+let valor=salario+(extra*20)
+res.innerHTML=`Salário: ${salario}<br>Extras:${extra}<br>Total:${valor}`}
+</script>
+
+</body>
+</html>
