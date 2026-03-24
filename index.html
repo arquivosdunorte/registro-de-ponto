@@ -1,91 +1,1619 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ponto SaaS Ultra</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PontoSmart – Controle de Ponto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
-body{margin:0;font-family:Arial;background:#eef2f7}
-.sidebar{width:230px;height:100vh;background:#1e3a5f;color:#fff;position:fixed;padding:15px}
-.sidebar button{width:100%;margin:4px 0;padding:10px;border:none;background:#2c5d8f;color:#fff}
-.main{margin-left:250px;padding:15px}
-.card{background:#fff;padding:15px;border-radius:8px;margin-bottom:15px}
-input,select{width:100%;padding:8px;margin:4px 0}
-table{width:100%;border-collapse:collapse}
-td{border:1px solid #ccc;padding:5px;text-align:center}
-.falta{background:#ffb3b3}
-.atestado{background:#ffe0b3}
-.feriado{background:#cce5ff}
-.normal{background:#e6ffe6}
-@media(max-width:768px){.sidebar{position:relative;width:100%;height:auto}.main{margin-left:0}}
+/* ═══════════════════════════════════════════
+   PONTOSMART — Design System
+   Tema: Corporate Clarity — azul índigo profundo,
+   fundo areia suave, tipografia Outfit bold.
+═══════════════════════════════════════════ */
+:root{
+  --ink:       #0d1b2a;
+  --ink2:      #2c3e50;
+  --ink3:      #546e7a;
+  --ink4:      #90a4ae;
+  --paper:     #f4f6f9;
+  --paper2:    #eef1f6;
+  --card:      #ffffff;
+  --border:    #dde3ec;
+  --blue:      #1a56db;
+  --blue-d:    #1141a8;
+  --blue-l:    #e8f0fe;
+  --blue-xl:   #f0f5ff;
+  --teal:      #0891b2;
+  --teal-l:    #e0f7fa;
+  --green:     #059669;
+  --green-l:   #d1fae5;
+  --amber:     #d97706;
+  --amber-l:   #fef3c7;
+  --red:       #dc2626;
+  --red-l:     #fee2e2;
+  --violet:    #7c3aed;
+  --violet-l:  #ede9fe;
+  --sidebar-w: 256px;
+  --top-h:     64px;
+  --r:         10px;
+  --r2:        14px;
+  --r3:        20px;
+  --sh:        0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+  --sh2:       0 2px 8px rgba(0,0,0,.08), 0 8px 32px rgba(0,0,0,.08);
+  --sh3:       0 8px 30px rgba(0,0,0,.14);
+  --font:      'Outfit', sans-serif;
+  --mono:      'JetBrains Mono', monospace;
+  --trans:     .18s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#c5cdd8;border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:#9eacba}
+a{text-decoration:none}
+button{cursor:pointer;font-family:var(--font)}
+input,select,textarea{font-family:var(--font)}
+
+/* ══ LAYOUT ══ */
+.app{display:flex;min-height:100vh}
+
+/* ══ SIDEBAR ══ */
+.sidebar{
+  width:var(--sidebar-w);position:fixed;top:0;left:0;height:100vh;
+  background:var(--ink);
+  display:flex;flex-direction:column;z-index:200;
+  transition:width var(--trans),transform var(--trans);
+  overflow:hidden;
+}
+.sidebar.collapsed{width:64px}
+.sidebar.mobile-open{transform:translateX(0)!important}
+
+.sb-head{
+  display:flex;align-items:center;gap:10px;
+  padding:0 16px;height:var(--top-h);
+  border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;
+}
+.sb-logo-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--blue) 0%,var(--teal) 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;box-shadow:0 4px 12px rgba(26,86,219,.4);
+}
+.sb-logo-text{
+  font-size:1.1rem;font-weight:800;color:#fff;
+  white-space:nowrap;transition:opacity var(--trans),width var(--trans);
+  letter-spacing:-.3px;
+}
+.sidebar.collapsed .sb-logo-text{opacity:0;width:0}
+.sb-toggle{
+  margin-left:auto;background:none;border:none;color:#64748b;
+  font-size:18px;padding:4px 6px;border-radius:6px;
+  transition:color var(--trans),background var(--trans);flex-shrink:0;
+}
+.sb-toggle:hover{color:#fff;background:rgba(255,255,255,.08)}
+
+.sb-nav{flex:1;padding:12px 8px;overflow-y:auto;overflow-x:hidden}
+.sb-section{
+  font-size:.62rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.2px;color:#475569;padding:14px 10px 5px;
+  white-space:nowrap;transition:opacity var(--trans);
+}
+.sidebar.collapsed .sb-section{opacity:0}
+.nav-a{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 10px;border-radius:8px;
+  color:#94a3b8;font-size:.875rem;font-weight:500;
+  transition:background var(--trans),color var(--trans);
+  white-space:nowrap;margin-bottom:2px;
+}
+.nav-a:hover{background:rgba(255,255,255,.06);color:#e2e8f0}
+.nav-a.active{background:var(--blue);color:#fff;font-weight:600}
+.nav-a.active .nav-ic{filter:brightness(1.3)}
+.nav-ic{font-size:17px;flex-shrink:0;width:20px;text-align:center}
+.nav-lbl{transition:opacity var(--trans);white-space:nowrap}
+.sidebar.collapsed .nav-lbl{opacity:0}
+
+.sb-foot{
+  border-top:1px solid rgba(255,255,255,.07);
+  padding:12px 8px;flex-shrink:0;
+}
+.sb-user{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px}
+.sb-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--teal));
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.8rem;flex-shrink:0;
+}
+.sb-uinfo{display:flex;flex-direction:column;overflow:hidden;transition:opacity var(--trans)}
+.sidebar.collapsed .sb-uinfo{opacity:0}
+.sb-uname{font-size:.8rem;font-weight:600;color:#e2e8f0;white-space:nowrap}
+.sb-urole{font-size:.68rem;color:#64748b}
+
+/* ══ MAIN ══ */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;transition:margin-left var(--trans)}
+.main.expanded{margin-left:64px}
+
+/* ══ TOPBAR ══ */
+.topbar{
+  height:var(--top-h);background:var(--card);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;position:sticky;top:0;z-index:100;box-shadow:var(--sh);
+}
+.tb-left{display:flex;align-items:center;gap:14px}
+.tb-menu{background:none;border:none;font-size:20px;color:var(--ink3);padding:4px;border-radius:6px;display:none;transition:color var(--trans)}
+.tb-menu:hover{color:var(--ink)}
+.tb-title{font-size:1.05rem;font-weight:700;color:var(--ink)}
+.tb-right{display:flex;align-items:center;gap:16px}
+.tb-emp-wrap{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--ink3)}
+.tb-emp-wrap label{font-weight:600;white-space:nowrap}
+.tb-emp-wrap select{
+  border:1.5px solid var(--border);border-radius:8px;
+  padding:5px 10px;font-size:.8rem;background:var(--paper);
+  color:var(--ink);cursor:pointer;font-family:var(--font);
+  transition:border-color var(--trans);
+}
+.tb-emp-wrap select:focus{outline:none;border-color:var(--blue)}
+.tb-clock{
+  font-family:var(--mono);font-size:.9rem;font-weight:600;
+  color:var(--blue);background:var(--blue-l);
+  padding:5px 14px;border-radius:99px;letter-spacing:.5px;
+}
+
+/* ══ CONTENT ══ */
+.content{padding:28px;flex:1}
+.page{display:none;animation:fadeUp .22s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ══ PAGE HEADER ══ */
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.ph h2{font-size:1.5rem;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:10px;letter-spacing:-.4px}
+.ph-sub{font-size:.8rem;color:var(--ink3);font-weight:400}
+.badge-count{font-size:.7rem;font-weight:700;background:var(--blue-l);color:var(--blue);padding:3px 9px;border-radius:99px}
+
+/* ══ BUTTONS ══ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-family:var(--font);font-size:.875rem;font-weight:600;border:none;transition:all var(--trans);white-space:nowrap}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-d);transform:translateY(-1px);box-shadow:0 4px 14px rgba(26,86,219,.35)}
+.btn-outline{background:transparent;color:var(--blue);border:1.5px solid var(--blue)}
+.btn-outline:hover{background:var(--blue-l)}
+.btn-ghost{background:transparent;color:var(--ink3);border:1.5px solid var(--border)}
+.btn-ghost:hover{background:var(--paper2);color:var(--ink)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-icon{background:none;border:none;padding:5px 7px;border-radius:6px;color:var(--ink3);font-size:15px;transition:all var(--trans)}
+.btn-icon:hover{background:var(--paper2)}
+.btn-icon.edit:hover{color:var(--blue)}
+.btn-icon.del:hover{color:var(--red);background:var(--red-l)}
+.full{width:100%;justify-content:center}
+
+/* ══ FORMS ══ */
+.fg{display:flex;flex-direction:column;gap:5px;flex:1}
+.fg.full{flex:0 0 100%}
+.fg label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)}
+.fr{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.fsec{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--blue);border-bottom:2px solid var(--blue-l);padding-bottom:6px;margin:14px 0 14px}
+input[type=text],input[type=email],input[type=number],input[type=date],
+input[type=time],input[type=month],input[type=password],select,textarea{
+  width:100%;padding:9px 13px;border:1.5px solid var(--border);
+  border-radius:8px;font-family:var(--font);font-size:.875rem;
+  color:var(--ink);background:#fff;transition:all var(--trans);outline:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.1)}
+input::placeholder{color:var(--ink4)}
+select{cursor:pointer}
+
+/* ══ SEARCH BAR ══ */
+.sbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.sbar input{flex:1;min-width:220px}
+
+/* ══ TABLE ══ */
+.tw{background:var(--card);border-radius:var(--r2);box-shadow:var(--sh);border:1px solid var(--border);overflow-x:auto}
+.dt{width:100%;border-collapse:collapse;font-size:.875rem}
+.dt thead{background:var(--paper);border-bottom:2px solid var(--border)}
+.dt th{padding:11px 14px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3);white-space:nowrap}
+.dt td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle}
+.dt tbody tr:last-child td{border-bottom:none}
+.dt tbody tr:hover{background:#fafbff}
+.tda{display:flex;gap:4px}
+.mono{font-family:var(--mono);font-size:.82rem}
+
+/* ══ STAT CARDS ══ */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.sc{
+  background:var(--card);border-radius:var(--r2);padding:22px 20px;
+  display:flex;align-items:center;gap:16px;
+  box-shadow:var(--sh);border:1px solid var(--border);
+  transition:transform var(--trans),box-shadow var(--trans);
+  position:relative;overflow:hidden;
+}
+.sc::after{content:'';position:absolute;right:-10px;top:-10px;width:70px;height:70px;border-radius:50%;opacity:.06}
+.sc.blue::after{background:var(--blue)}
+.sc.green::after{background:var(--green)}
+.sc.amber::after{background:var(--amber)}
+.sc.red::after{background:var(--red)}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.sc-ic{font-size:30px;flex-shrink:0}
+.sc-info{display:flex;flex-direction:column}
+.sc-val{font-size:1.65rem;font-weight:800;line-height:1.1;letter-spacing:-.5px}
+.sc-lbl{font-size:.72rem;font-weight:600;color:var(--ink3);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+.sc.blue .sc-val{color:var(--blue)}
+.sc.green .sc-val{color:var(--green)}
+.sc.amber .sc-val{color:var(--amber)}
+.sc.red .sc-val{color:var(--red)}
+.sc.blue{border-left:3px solid var(--blue)}
+.sc.green{border-left:3px solid var(--green)}
+.sc.amber{border-left:3px solid var(--amber)}
+.sc.red{border-left:3px solid var(--red)}
+
+/* ══ DASHBOARD BOTTOM ══ */
+.dash-grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+.chart-card,.recent-card{
+  background:var(--card);border-radius:var(--r2);padding:22px;
+  box-shadow:var(--sh);border:1px solid var(--border);
+}
+.card-title{font-size:.95rem;font-weight:700;color:var(--ink);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';display:block;width:3px;height:16px;background:var(--blue);border-radius:99px}
+.recent-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto}
+.ri{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--paper);border-radius:8px;transition:background var(--trans)}
+.ri:hover{background:var(--blue-xl)}
+.ri-name{font-weight:600;font-size:.85rem}
+.ri-date{font-size:.72rem;color:var(--ink3);margin-top:2px}
+.ri-time{font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--blue);background:var(--blue-l);padding:3px 8px;border-radius:99px}
+
+/* ══ SITUAÇÃO BADGES ══ */
+.sit{display:inline-block;padding:3px 9px;border-radius:99px;font-size:.72rem;font-weight:700}
+.sit-normal   {background:var(--green-l);color:var(--green)}
+.sit-falta    {background:var(--red-l);color:var(--red)}
+.sit-atestado {background:var(--amber-l);color:var(--amber)}
+.sit-feriado  {background:var(--blue-l);color:var(--blue)}
+.sit-suspensao{background:var(--violet-l);color:var(--violet)}
+.sit-outros   {background:var(--paper2);color:var(--ink3)}
+.sit-folga    {background:var(--teal-l);color:var(--teal)}
+
+/* ══ PONTO MODULE — COMPACTO ══ */
+.pf-wrap{background:var(--card);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;border:1px solid var(--border);box-shadow:var(--sh)}
+.pf-wrap .fr{margin-bottom:0;gap:10px}
+.pf-wrap .fg label{font-size:.65rem}
+.pf-wrap input,.pf-wrap select{padding:6px 9px;font-size:.82rem}
+.psumbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.psi{background:var(--card);border-radius:var(--r);padding:7px 10px;flex:1;min-width:100px;border:1px solid var(--border);box-shadow:var(--sh);display:flex;flex-direction:column;gap:1px}
+.psi.g{border-left:3px solid var(--green)}
+.psi.r{border-left:3px solid var(--red)}
+.psi.a{border-left:3px solid var(--amber)}
+.psi.b{border-left:3px solid var(--blue)}
+.psi.vio{border-left:3px solid var(--violet)}
+.psi-lbl{font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink4)}
+.psi-val{font-size:.9rem;font-weight:800;font-family:var(--mono)}
+.psi.g .psi-val{color:var(--green)}
+.psi.r .psi-val{color:var(--red)}
+.psi.a .psi-val{color:var(--amber)}
+.psi.b .psi-val{color:var(--blue)}
+.psi.vio .psi-val{color:var(--violet)}
+.pt-compact th{padding:6px 7px!important;font-size:.61rem!important}
+.pt-compact td{padding:3px 6px!important;font-size:.78rem!important;border-bottom:1px solid var(--border)}
+.ti{width:76px;padding:3px 4px;font-family:var(--mono);font-size:.72rem;text-align:center;border:1.5px solid var(--border);border-radius:5px;background:var(--paper);transition:all var(--trans)}
+.ti:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 2px rgba(26,86,219,.1)}
+.ss{padding:3px 5px;font-size:.7rem;min-width:95px;border-radius:5px}
+.td-trab{font-family:var(--mono);font-weight:700;color:var(--ink);font-size:.76rem}
+.td-ext{font-family:var(--mono);font-weight:700;color:var(--green);font-size:.76rem}
+.td-atr{font-family:var(--mono);font-weight:700;color:var(--red);font-size:.76rem}
+.td-val-ext{font-family:var(--mono);font-weight:700;color:var(--green);font-size:.74rem}
+.td-val-atr{font-family:var(--mono);font-weight:700;color:var(--red);font-size:.74rem}
+.we-row td{background:#fafbfd!important;color:var(--ink4)}
+.hol-row td{background:var(--blue-xl)!important}
+/* Painel financeiro */
+.fin-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;box-shadow:var(--sh)}
+.fin-bar h4{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:7px}
+.fin-item{background:var(--paper);border-radius:7px;padding:7px 10px;display:flex;flex-direction:column;gap:2px}
+.fin-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink4)}
+.fin-val{font-size:.88rem;font-weight:800;font-family:var(--mono);color:var(--ink)}
+.fin-val.g{color:var(--green)}.fin-val.r{color:var(--red)}.fin-val.b{color:var(--blue)}.fin-val.a{color:var(--amber)}
+
+/* ══ MODALS ══ */
+.overlay{
+  position:fixed;inset:0;background:rgba(13,27,42,.55);
+  backdrop-filter:blur(5px);display:flex;align-items:center;
+  justify-content:center;z-index:500;padding:20px;
+  animation:fadeIn .15s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--card);border-radius:var(--r3);
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+  box-shadow:var(--sh3);animation:slideUp .2s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.modal-lg{max-width:740px}
+.modal-sm{max-width:400px}
+.mh{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 26px 0;position:sticky;top:0;background:var(--card);z-index:1;
+}
+.mh h3{font-size:1.1rem;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.mc{padding:20px 26px}
+.mf{
+  padding:16px 26px;display:flex;justify-content:flex-end;gap:10px;
+  border-top:1px solid var(--border);
+  position:sticky;bottom:0;background:var(--card);
+}
+.close-btn{
+  background:none;border:none;font-size:18px;color:var(--ink4);
+  padding:4px 8px;border-radius:6px;transition:all var(--trans);
+}
+.close-btn:hover{color:var(--red);background:var(--red-l)}
+
+/* ══ EMPTY STATE ══ */
+.empty{text-align:center;padding:60px 20px;color:var(--ink4)}
+.empty-ic{font-size:52px;margin-bottom:14px;opacity:.5}
+.empty p{font-size:.95rem}
+
+/* ══ TOAST ══ */
+#toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--ink);color:#fff;padding:12px 20px;
+  border-radius:10px;font-size:.875rem;font-weight:500;
+  z-index:999;box-shadow:var(--sh2);
+  transform:translateY(80px);opacity:0;transition:all .3s ease;
+  max-width:320px;display:flex;align-items:center;gap:8px;
+}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.ok{background:var(--green)}
+#toast.err{background:var(--red)}
+#toast.warn{background:var(--amber)}
+
+/* ══ RELATORIO ══ */
+.rel-card{background:var(--card);border-radius:var(--r2);padding:32px;box-shadow:var(--sh);border:1px solid var(--border);margin-bottom:24px}
+.rel-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid var(--border)}
+.rel-emp{font-size:1.2rem;font-weight:800;color:var(--blue);letter-spacing:-.3px}
+.rel-func-bar{background:var(--paper);border-radius:var(--r);padding:14px 18px;margin-bottom:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.rfi{display:flex;flex-direction:column;gap:2px}
+.rfi-l{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink4)}
+.rfi-v{font-size:.88rem;font-weight:600;color:var(--ink)}
+.rel-tots{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-top:20px}
+.rt{padding:14px;border-radius:var(--r);text-align:center}
+.rt.bl{background:var(--blue-l)}.rt.gr{background:var(--green-l)}.rt.re{background:var(--red-l)}.rt.am{background:var(--amber-l)}
+.rt-v{font-size:1.25rem;font-weight:800;font-family:var(--mono)}
+.rt-l{font-size:.68rem;font-weight:600;color:var(--ink3);margin-top:2px}
+.rt.bl .rt-v{color:var(--blue)}.rt.gr .rt-v{color:var(--green)}.rt.re .rt-v{color:var(--red)}.rt.am .rt-v{color:var(--amber)}
+.sig-row{margin-top:32px;display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:24px}
+.sig-box{flex:1;text-align:center}
+.sig-line{border-top:1px solid var(--ink);margin:0 24px;padding-top:8px;font-size:.78rem;color:var(--ink3)}
+
+/* ══ PRINT ══ */
+@media print{
+  .sidebar,.topbar,.pf-wrap,.ph button,.btn-outline,.sbar{display:none!important}
+  .main{margin-left:0!important}
+  .rel-card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+  body{background:#fff}
+}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:1100px){.dash-grid{grid-template-columns:1fr}}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);width:var(--sidebar-w)!important}
+  .sidebar.mobile-open{transform:none}
+  .main{margin-left:0!important}
+  .tb-menu{display:block}
+  .content{padding:16px}
+  .fr{flex-direction:column;gap:10px}
+  .psumbar .psi{min-width:42%}
+  .cards{grid-template-columns:1fr 1fr}
+  .tb-emp-wrap label{display:none}
+}
+@media(max-width:480px){
+  .cards{grid-template-columns:1fr}
+  .modal{max-height:95vh}
+}
+
+/* ══ EXTRA UTILITIES ══ */
+.divider{height:1px;background:var(--border);margin:4px 0}
+.chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:600;background:var(--paper2);color:var(--ink3)}
 </style>
 </head>
 <body>
+<div class="app" id="app">
 
-<div id="app">
-<div class="sidebar">
-<button onclick="show('dash')">Dashboard</button>
-<button onclick="show('cal')">Calendário</button>
-<button onclick="show('folha')">Folha</button>
+  <!-- ████ SIDEBAR ████ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo-icon">⏱</div>
+      <span class="sb-logo-text">PontoSmart</span>
+      <button class="sb-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Principal</div>
+      <a href="#" class="nav-a active" data-page="dashboard" onclick="nav('dashboard',this)">
+        <span class="nav-ic">📊</span><span class="nav-lbl">Dashboard</span>
+      </a>
+      <div class="sb-section">Cadastros</div>
+      <a href="#" class="nav-a" data-page="empresas" onclick="nav('empresas',this)">
+        <span class="nav-ic">🏢</span><span class="nav-lbl">Empresas</span>
+      </a>
+      <a href="#" class="nav-a" data-page="funcionarios" onclick="nav('funcionarios',this)">
+        <span class="nav-ic">👤</span><span class="nav-lbl">Funcionários</span>
+      </a>
+      <a href="#" class="nav-a" data-page="feriados" onclick="nav('feriados',this)">
+        <span class="nav-ic">📅</span><span class="nav-lbl">Feriados</span>
+      </a>
+      <div class="sb-section">Operação</div>
+      <a href="#" class="nav-a" data-page="ponto" onclick="nav('ponto',this)">
+        <span class="nav-ic">⏱</span><span class="nav-lbl">Registro de Ponto</span>
+      </a>
+      <a href="#" class="nav-a" data-page="relatorios" onclick="nav('relatorios',this)">
+        <span class="nav-ic">📄</span><span class="nav-lbl">Relatórios</span>
+      </a>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-avatar">A</div>
+        <div class="sb-uinfo">
+          <span class="sb-uname">Administrador</span>
+          <span class="sb-urole">Acesso Total</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ████ MAIN ████ -->
+  <div class="main" id="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="tb-left">
+        <button class="tb-menu" onclick="toggleSidebar()">☰</button>
+        <span class="tb-title" id="tbTitle">Dashboard</span>
+      </div>
+      <div class="tb-right">
+        <div class="tb-emp-wrap">
+          <label>Empresa:</label>
+          <select id="gEmpSel" onchange="onEmpChange()">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+        <div class="tb-clock" id="clock">00:00:00</div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ══════ DASHBOARD ══════ -->
+      <div class="page active" id="pg-dashboard">
+        <div class="ph">
+          <h2>📊 Dashboard <span class="ph-sub" id="dashSub"></span></h2>
+        </div>
+        <div class="cards">
+          <div class="sc blue"><div class="sc-ic">👥</div><div class="sc-info"><span class="sc-val" id="dFuncs">0</span><span class="sc-lbl">Funcionários</span></div></div>
+          <div class="sc green"><div class="sc-ic">🕐</div><div class="sc-info"><span class="sc-val" id="dHoras">0h</span><span class="sc-lbl">Horas no Mês</span></div></div>
+          <div class="sc amber"><div class="sc-ic">⚡</div><div class="sc-info"><span class="sc-val" id="dExtras">0h</span><span class="sc-lbl">Horas Extras</span></div></div>
+          <div class="sc red"><div class="sc-ic">⚠️</div><div class="sc-info"><span class="sc-val" id="dAtrasos">0h</span><span class="sc-lbl">Atrasos</span></div></div>
+        </div>
+        <div class="dash-grid">
+          <div class="chart-card">
+            <div class="card-title">Horas por Funcionário — Mês Atual</div>
+            <canvas id="chartCanvas" height="200"></canvas>
+          </div>
+          <div class="recent-card">
+            <div class="card-title">Últimos Registros</div>
+            <div class="recent-list" id="recentList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ EMPRESAS ══════ -->
+      <div class="page" id="pg-empresas">
+        <div class="ph">
+          <h2>🏢 Empresas <span class="badge-count" id="empCount">0/10</span></h2>
+          <button class="btn btn-primary" onclick="openEmpModal()">+ Nova Empresa</button>
+        </div>
+        <div class="sbar">
+          <input type="text" id="srchEmp" placeholder="🔍 Buscar empresa..." oninput="renderEmps()"/>
+        </div>
+        <div class="tw">
+          <table class="dt">
+            <thead><tr><th>Razão Social</th><th>Nome Fantasia</th><th>CNPJ</th><th>Telefone</th><th>Email</th><th>Ações</th></tr></thead>
+            <tbody id="empTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════ FUNCIONÁRIOS ══════ -->
+      <div class="page" id="pg-funcionarios">
+        <div class="ph">
+          <h2>👤 Funcionários</h2>
+          <button class="btn btn-primary" onclick="openFuncModal()">+ Novo Funcionário</button>
+        </div>
+        <div class="sbar">
+          <input type="text" id="srchFunc" placeholder="🔍 Buscar..." oninput="renderFuncs()"/>
+          <select id="filterDept" onchange="renderFuncs()"><option value="">Todos Departamentos</option></select>
+        </div>
+        <div class="tw">
+          <table class="dt">
+            <thead><tr><th>Nome</th><th>CPF</th><th>Cargo</th><th>Dept.</th><th>Empresa</th><th>Admissão</th><th>Jornada</th><th>Contrato</th><th>Ações</th></tr></thead>
+            <tbody id="funcTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════ FERIADOS ══════ -->
+      <div class="page" id="pg-feriados">
+        <div class="ph">
+          <h2>📅 Feriados</h2>
+          <button class="btn btn-primary" onclick="openFerModal()">+ Novo Feriado</button>
+        </div>
+        <div class="tw">
+          <table class="dt">
+            <thead><tr><th>Data</th><th>Dia</th><th>Descrição</th><th>Tipo</th><th>Ações</th></tr></thead>
+            <tbody id="ferTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════ PONTO ══════ -->
+      <div class="page" id="pg-ponto">
+        <div class="ph" style="margin-bottom:10px"><h2>⏱ Registro de Ponto</h2></div>
+        <div class="pf-wrap">
+          <div class="fr" style="align-items:flex-end">
+            <div class="fg"><label>Funcionário</label><select id="ptFuncSel" onchange="loadPonto()"><option value="">Selecione...</option></select></div>
+            <div class="fg"><label>Mês / Ano</label><input type="month" id="ptMes" onchange="loadPonto()"/></div>
+            <div class="fg" style="flex:0 0 auto"><button class="btn btn-ghost btn-sm" onclick="preencherJornada()" title="Preencher dias úteis com horário padrão">⚡ Padrão</button></div>
+          </div>
+        </div>
+        <div id="ptSumBar" class="psumbar" style="display:none">
+          <div class="psi b"><span class="psi-lbl">Trabalhado</span><span class="psi-val" id="ptTrab">0h00</span></div>
+          <div class="psi b"><span class="psi-lbl">Previsto</span><span class="psi-val" id="ptPrev">0h00</span></div>
+          <div class="psi g"><span class="psi-lbl">H. Extras</span><span class="psi-val" id="ptExt">0h00</span></div>
+          <div class="psi r"><span class="psi-lbl">Atrasos</span><span class="psi-val" id="ptAtr">0h00</span></div>
+          <div class="psi a"><span class="psi-lbl">Banco</span><span class="psi-val" id="ptBanco">0h00</span></div>
+        </div>
+        <!-- Painel financeiro -->
+        <div id="ptFinBar" class="fin-bar" style="display:none">
+          <h4>💰 Cálculo Financeiro do Mês</h4>
+          <div class="fin-grid">
+            <div class="fin-item"><span class="fin-lbl">Salário Base</span><span class="fin-val b" id="finSal">R$ 0,00</span></div>
+            <div class="fin-item"><span class="fin-lbl">Valor Hora Normal</span><span class="fin-val" id="finVhN">R$ 0,00</span></div>
+            <div class="fin-item"><span class="fin-lbl">Horas Extras (qtd)</span><span class="fin-val g" id="finExtH">0h00</span></div>
+            <div class="fin-item"><span class="fin-lbl">Valor H. Extra 50%</span><span class="fin-val g" id="finVh50">R$ 0,00/h</span></div>
+            <div class="fin-item"><span class="fin-lbl">Valor Total Extras</span><span class="fin-val g" id="finTotExt">R$ 0,00</span></div>
+            <div class="fin-item"><span class="fin-lbl">Atrasos (qtd)</span><span class="fin-val r" id="finAtrH">0h00</span></div>
+            <div class="fin-item"><span class="fin-lbl">Desconto Atrasos</span><span class="fin-val r" id="finTotAtr">R$ 0,00</span></div>
+            <div class="fin-item"><span class="fin-lbl">Saldo Líquido</span><span class="fin-val b" id="finLiq">R$ 0,00</span></div>
+          </div>
+        </div>
+        <div id="ptWrap" class="tw" style="display:none">
+          <table class="dt pt-compact" id="ptTable">
+            <thead>
+              <tr>
+                <th>Data/Dia</th><th>Situação</th>
+                <th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th>
+                <th>Trabalhado</th><th>Extra</th><th>Vl.Extra</th><th>Atraso</th><th>Desc.Atr.</th><th>⚙</th>
+              </tr>
+            </thead>
+            <tbody id="ptTbody"></tbody>
+          </table>
+        </div>
+        <div id="ptEmpty" class="empty">
+          <div class="empty-ic">⏱</div>
+          <p>Selecione um funcionário e o mês para exibir os registros de ponto.</p>
+        </div>
+      </div>
+
+      <!-- ══════ RELATÓRIOS ══════ -->
+      <div class="page" id="pg-relatorios">
+        <div class="ph">
+          <h2>📄 Relatórios</h2>
+          <button class="btn btn-outline" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+        <div class="pf-wrap" style="padding:14px 18px">
+          <div class="fr" style="align-items:flex-end;margin-bottom:10px">
+            <div class="fg"><label>Tipo de Relatório</label>
+              <select id="relTipo">
+                <option value="individual">📋 Individual — Espelho de Ponto</option>
+                <option value="sintetico">📊 Sintético Geral — Resumo por Funcionário</option>
+                <option value="analitico">📑 Analítico Geral — Todos os Dias</option>
+              </select>
+            </div>
+            <div class="fg"><label>Funcionário</label><select id="relFuncSel"><option value="">Todos</option></select></div>
+            <div class="fg"><label>Mês / Ano</label><input type="month" id="relMes"/></div>
+            <div class="fg" style="flex:0 0 auto"><button class="btn btn-primary" onclick="gerarRel()">▶ Gerar</button></div>
+          </div>
+        </div>
+        <div id="relOutput"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ████ MODALS ████ -->
+
+<!-- Modal Empresa -->
+<div class="overlay" id="mEmp" style="display:none" onclick="if(event.target===this)closeM('mEmp')">
+  <div class="modal">
+    <div class="mh"><h3 id="mEmpTitle">Nova Empresa</h3><button class="close-btn" onclick="closeM('mEmp')">✕</button></div>
+    <div class="mc">
+      <input type="hidden" id="eId"/>
+      <div class="fr">
+        <div class="fg"><label>Razão Social *</label><input type="text" id="eRazao" placeholder="Razão Social"/></div>
+        <div class="fg"><label>Nome Fantasia</label><input type="text" id="eFantasia" placeholder="Nome Fantasia"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>CNPJ *</label><input type="text" id="eCNPJ" placeholder="00.000.000/0000-00" maxlength="18" oninput="mCNPJ(this)"/></div>
+        <div class="fg"><label>Telefone</label><input type="text" id="eTel" placeholder="(00) 00000-0000" maxlength="15" oninput="mPhone(this)"/></div>
+      </div>
+      <div class="fr"><div class="fg full"><label>Endereço</label><input type="text" id="eEnd" placeholder="Rua, número, bairro, cidade – UF"/></div></div>
+      <div class="fr"><div class="fg full"><label>Email</label><input type="email" id="eEmail" placeholder="contato@empresa.com.br"/></div></div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeM('mEmp')">Cancelar</button><button class="btn btn-primary" onclick="saveEmp()">Salvar Empresa</button></div>
+  </div>
 </div>
 
-<div class="main">
-
-<div id="dash" class="card">
-<h2>Dashboard Financeiro</h2>
-<canvas id="graf"></canvas>
+<!-- Modal Funcionário -->
+<div class="overlay" id="mFunc" style="display:none" onclick="if(event.target===this)closeM('mFunc')">
+  <div class="modal modal-lg">
+    <div class="mh"><h3 id="mFuncTitle">Novo Funcionário</h3><button class="close-btn" onclick="closeM('mFunc')">✕</button></div>
+    <div class="mc">
+      <input type="hidden" id="fId"/>
+      <div class="fsec">🏢 Empresa</div>
+      <div class="fr">
+        <div class="fg full"><label>Empresa *</label><select id="fEmpId" style="font-weight:600"><option value="">Selecione uma empresa...</option></select></div>
+      </div>
+      <div class="fsec">👤 Dados Pessoais</div>
+      <div class="fr">
+        <div class="fg"><label>Nome Completo *</label><input type="text" id="fNome" placeholder="Nome completo"/></div>
+        <div class="fg"><label>CPF *</label><input type="text" id="fCPF" placeholder="000.000.000-00" maxlength="14" oninput="mCPF(this)"/></div>
+      </div>
+      <div class="fsec">💼 Dados Profissionais</div>
+      <div class="fr">
+        <div class="fg"><label>Cargo *</label><input type="text" id="fCargo" placeholder="Ex: Analista"/></div>
+        <div class="fg"><label>Departamento *</label><input type="text" id="fDept" placeholder="Ex: TI"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Data Admissão *</label><input type="date" id="fAdm"/></div>
+        <div class="fg"><label>Tipo Contrato</label>
+          <select id="fContrato"><option>CLT</option><option>PJ</option><option>Temporário</option><option>Estágio</option></select>
+        </div>
+      </div>
+      <div class="fsec">🕐 Jornada de Trabalho</div>
+      <div class="fr">
+        <div class="fg"><label>Entrada Padrão</label><input type="time" id="fEnt" value="08:00"/></div>
+        <div class="fg"><label>Saída Padrão</label><input type="time" id="fSai" value="17:00"/></div>
+        <div class="fg"><label>Almoço (min)</label><input type="number" id="fAlm" value="60" min="0" max="180"/></div>
+      </div>
+      <div class="fsec">💰 Valores</div>
+      <div class="fr">
+        <div class="fg"><label>Salário Base (R$)</label><input type="number" id="fSal" placeholder="0,00" min="0" step="0.01"/></div>
+        <div class="fg"><label>Valor Hora Normal (R$)</label><input type="number" id="fVhN" placeholder="0,00" min="0" step="0.01"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Hora Extra 50% (R$)</label><input type="number" id="fVh50" placeholder="0,00" min="0" step="0.01"/></div>
+        <div class="fg"><label>Hora Extra 100% (R$)</label><input type="number" id="fVh100" placeholder="0,00" min="0" step="0.01"/></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeM('mFunc')">Cancelar</button><button class="btn btn-primary" onclick="saveFunc()">Salvar Funcionário</button></div>
+  </div>
 </div>
 
-<div id="cal" class="card hidden">
-<h2>Calendário</h2>
-<input type="month" id="mes">
-<button onclick="cal()">Gerar</button>
-<table id="tbl"></table>
+<!-- Modal Feriado -->
+<div class="overlay" id="mFer" style="display:none" onclick="if(event.target===this)closeM('mFer')">
+  <div class="modal modal-sm">
+    <div class="mh"><h3 id="mFerTitle">Novo Feriado</h3><button class="close-btn" onclick="closeM('mFer')">✕</button></div>
+    <div class="mc">
+      <input type="hidden" id="ferIdH"/>
+      <div class="fr">
+        <div class="fg"><label>Data *</label><input type="date" id="ferData"/></div>
+        <div class="fg"><label>Tipo</label>
+          <select id="ferTipo"><option>Nacional</option><option>Estadual</option><option>Municipal</option><option>Facultativo</option></select>
+        </div>
+      </div>
+      <div class="fr"><div class="fg full"><label>Descrição *</label><input type="text" id="ferDesc" placeholder="Ex: Natal, Tiradentes..."/></div></div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeM('mFer')">Cancelar</button><button class="btn btn-primary" onclick="saveFer()">Salvar</button></div>
+  </div>
 </div>
 
-<div id="folha" class="card hidden">
-<h2>Folha Pagamento</h2>
-<select id="func"></select>
-<button onclick="calcFolha()">Calcular</button>
-<div id="res"></div>
+<!-- Modal Confirm -->
+<div class="overlay" id="mConfirm" style="display:none" onclick="if(event.target===this)closeM('mConfirm')">
+  <div class="modal modal-sm">
+    <div class="mh"><h3>Confirmar Exclusão</h3><button class="close-btn" onclick="closeM('mConfirm')">✕</button></div>
+    <div class="mc"><p id="confirmTxt" style="color:var(--ink2);line-height:1.5"></p></div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeM('mConfirm')">Cancelar</button><button class="btn btn-danger" id="confirmOk">Excluir</button></div>
+  </div>
 </div>
 
-</div>
-</div>
+<!-- Toast -->
+<div id="toast">✓ <span id="toastMsg"></span></div>
 
 <script>
-function show(id){
-document.querySelectorAll('.card').forEach(x=>x.classList.add('hidden'))
-document.getElementById(id).classList.remove('hidden')
+/* ═══════════════════════════════════════════
+   PONTOSMART – JavaScript Completo
+   Sem dependências externas
+═══════════════════════════════════════════ */
+
+// ── STORAGE KEYS ──
+const K = {
+  emps:  'ps_emps',
+  funcs: 'ps_funcs',
+  fers:  'ps_fers',
+  pts:   'ps_pts',
+  aEmp:  'ps_aEmp',
+};
+
+// ── STORAGE HELPERS ──
+const ls = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+  one: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+};
+
+// ── UID ──
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+// ── DATE/TIME UTILS ──
+const today  = () => new Date().toISOString().slice(0,10);
+const toMins = s => { if(!s||!s.includes(':')) return null; const [h,m]=s.split(':').map(Number); return h*60+m; };
+const toHHMM = m => { if(m===null||isNaN(m)) return '--:--'; const s=m<0?'-':'',a=Math.abs(Math.round(m)); return `${s}${Math.floor(a/60)}h${String(a%60).padStart(2,'0')}`; };
+const fmtD   = d => { if(!d) return ''; const [y,mo,dd]=d.split('-'); return `${dd}/${mo}/${y}`; };
+const wday   = d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][new Date(d+'T12:00:00').getDay()];
+const isWE   = d => { const w=new Date(d+'T12:00:00').getDay(); return w===0||w===6; };
+const isHol  = d => ls.get(K.fers).some(f=>f.data===d);
+const getHol = d => ls.get(K.fers).find(f=>f.data===d);
+
+function daysOfMonth(ym){
+  const [y,m]=ym.split('-').map(Number);
+  const n=new Date(y,m,0).getDate();
+  return Array.from({length:n},(_,i)=>`${y}-${String(m).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`);
 }
 
-// CALENDÁRIO COLORIDO
-function cal(){
-let m=mes.value.split('-');let d=new Date(m[0],m[1],0).getDate()
-let html='<tr>'
-for(let i=1;i<=d;i++){
-let tipo=['normal','falta','atestado','feriado'][Math.floor(Math.random()*4)]
-html+=`<td class='${tipo}'>${i}</td>`}
-html+='</tr>'
-tbl.innerHTML=html}
+// ── ACTIVE EMPRESA ──
+const getAEmp = () => { const id=localStorage.getItem(K.aEmp)||''; return ls.get(K.emps).find(e=>e.id===id)||null; };
+const getFuncs = () => { const id=localStorage.getItem(K.aEmp)||''; return ls.get(K.funcs).filter(f=>f.empId===id); };
 
-// DASHBOARD GRAFICO
-function load(){
-let c=graf.getContext('2d')
-c.clearRect(0,0,300,150)
-let vals=[120,150,180]
-vals.forEach((v,i)=>{c.fillRect(i*60,150-v,40,v)})
+// ── JORNADA CALC ──
+function jornadaMins(f){
+  const e=toMins(f.ent), s=toMins(f.sai);
+  if(e===null||s===null) return 480;
+  return (s-e)-(f.alm||60);
 }
-load()
 
-// FOLHA PAGAMENTO
-function calcFolha(){
-let salario=2000
-let horas=180
-let extra=horas-160
-let valor=salario+(extra*20)
-res.innerHTML=`Salário: ${salario}<br>Extras:${extra}<br>Total:${valor}`}
+function calcDia(reg, f){
+  const sits=['Falta','Suspensão','Outros'];
+  if(sits.includes(reg.sit)){
+    const prev=jornadaMins(f);
+    return {trab:0,extra:0,atr:prev,prev};
+  }
+  if(['Atestado','Feriado','Folga'].includes(reg.sit))
+    return {trab:0,extra:0,atr:0,prev:0};
+
+  const e=toMins(reg.ent), sa=toMins(reg.saAlm), va=toMins(reg.vaAlm), s=toMins(reg.sai);
+  if(e===null||s===null) return {trab:0,extra:0,atr:0,prev:jornadaMins(f)};
+
+  let trab=s-e;
+  if(sa!==null&&va!==null&&va>sa) trab-=(va-sa);
+  else trab-=(f.alm||60);
+  trab=Math.max(0,trab);
+
+  const prev=jornadaMins(f);
+  const extra=Math.max(0,trab-prev);
+  // atraso = deficit + entrada atrasada
+  const entPrev=toMins(f.ent)||480;
+  const atrEnt=Math.max(0,e-entPrev);
+  const atrDef=Math.max(0,prev-trab);
+  return {trab,extra,atr:Math.max(atrDef,atrEnt),prev};
+}
+
+function getPt(funcId,data){
+  const all=ls.get(K.pts);
+  return all.find(p=>p.funcId===funcId&&p.data===data)||null;
+}
+
+function getOrCreatePt(funcId,data){
+  const all=ls.get(K.pts);
+  let p=all.find(x=>x.funcId===funcId&&x.data===data);
+  if(!p){
+    p={id:uid(),funcId,empId:localStorage.getItem(K.aEmp)||'',data,sit:'Normal',ent:'',saAlm:'',vaAlm:'',sai:''};
+    all.push(p);
+    ls.set(K.pts,all);
+  }
+  return p;
+}
+
+function setPtField(regId,field,val){
+  const all=ls.get(K.pts);
+  const i=all.findIndex(p=>p.id===regId);
+  if(i>=0){ all[i][field]=val; ls.set(K.pts,all); }
+}
+
+// ── TOAST ──
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  el.className=`show ${type}`;
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.className='',3200);
+}
+
+// ── MODAL ──
+function openM(id){ document.getElementById(id).style.display='flex'; document.body.style.overflow='hidden'; }
+function closeM(id){ document.getElementById(id).style.display='none'; document.body.style.overflow=''; }
+function confirm2(msg,cb){
+  document.getElementById('confirmTxt').textContent=msg;
+  const btn=document.getElementById('confirmOk');
+  btn.onclick=()=>{ cb(); closeM('mConfirm'); };
+  openM('mConfirm');
+}
+
+// ── SIDEBAR TOGGLE ──
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar'),mc=document.getElementById('main');
+  if(window.innerWidth<=768){ sb.classList.toggle('mobile-open'); }
+  else{ sb.classList.toggle('collapsed'); mc.classList.toggle('expanded'); }
+}
+
+// ── CLOCK ──
+function startClock(){
+  const tick=()=>{
+    const n=new Date();
+    document.getElementById('clock').textContent=
+      [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+  };
+  tick(); setInterval(tick,1000);
+}
+
+// ── NAVIGATION ──
+const pageTitles={dashboard:'Dashboard',empresas:'Empresas',funcionarios:'Funcionários',feriados:'Feriados',ponto:'Registro de Ponto',relatorios:'Relatórios'};
+function nav(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-a').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById(`pg-${page}`);
+  if(pg) pg.classList.add('active');
+  if(el) el.classList.add('active');
+  document.getElementById('tbTitle').textContent=pageTitles[page]||page;
+  const handlers={dashboard:renderDash,empresas:renderEmps,funcionarios:renderFuncs,feriados:renderFers,ponto:initPonto,relatorios:initRel};
+  if(handlers[page]) handlers[page]();
+  if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('mobile-open');
+  return false;
+}
+
+// ── EMPRESA SELECTOR ──
+function refreshEmpSel(){
+  const sel=document.getElementById('gEmpSel');
+  const emps=ls.get(K.emps), act=localStorage.getItem(K.aEmp)||'';
+  sel.innerHTML='<option value="">Selecione...</option>';
+  emps.forEach(e=>{ const o=document.createElement('option'); o.value=e.id; o.textContent=e.fantasia||e.razao; if(e.id===act)o.selected=true; sel.appendChild(o); });
+}
+function onEmpChange(){
+  const v=document.getElementById('gEmpSel').value;
+  localStorage.setItem(K.aEmp,v);
+  const active=document.querySelector('.nav-a.active');
+  if(active) nav(active.dataset.page,active);
+}
+
+// ════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════
+function renderDash(){
+  const now=new Date();
+  const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const emp=getAEmp(), funcs=getFuncs();
+  document.getElementById('dashSub').textContent=emp?`— ${emp.fantasia||emp.razao}`:' ';
+  document.getElementById('dFuncs').textContent=funcs.length;
+  let totTrab=0,totExt=0,totAtr=0;
+  const recent=[];
+  funcs.forEach(f=>{
+    const recs=ls.get(K.pts).filter(p=>p.funcId===f.id&&p.data.startsWith(ym));
+    recs.forEach(r=>{ const c=calcDia(r,f); totTrab+=c.trab; totExt+=Math.max(0,c.extra); totAtr+=Math.max(0,c.atr); if(c.trab>0) recent.push({nome:f.nome,data:r.data,trab:c.trab}); });
+  });
+  document.getElementById('dHoras').textContent=toHHMM(totTrab);
+  document.getElementById('dExtras').textContent=toHHMM(totExt);
+  document.getElementById('dAtrasos').textContent=toHHMM(totAtr);
+  // Recent list
+  recent.sort((a,b)=>b.data.localeCompare(a.data));
+  const rl=document.getElementById('recentList');
+  rl.innerHTML=recent.length ? recent.slice(0,7).map(r=>`
+    <div class="ri">
+      <div><div class="ri-name">${r.nome}</div><div class="ri-date">${fmtD(r.data)} (${wday(r.data)})</div></div>
+      <span class="ri-time">${toHHMM(r.trab)}</span>
+    </div>`).join('') : '<div style="color:var(--ink4);font-size:.82rem;padding:12px">Sem registros no mês.</div>';
+  // Chart
+  drawChart(funcs, ym);
+}
+
+function drawChart(funcs,ym){
+  const c=document.getElementById('chartCanvas');
+  c.width=c.parentElement.clientWidth-44||460; c.height=200;
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  if(!funcs.length){ ctx.fillStyle='#94a3b8'; ctx.font='14px Outfit'; ctx.textAlign='center'; ctx.fillText('Nenhum funcionário cadastrado.',c.width/2,c.height/2); return; }
+  const data=funcs.map(f=>({
+    nome:f.nome.split(' ')[0],
+    h:ls.get(K.pts).filter(p=>p.funcId===f.id&&p.data.startsWith(ym)).reduce((s,r)=>s+calcDia(r,f).trab,0)/60
+  }));
+  const maxV=Math.max(...data.map(d=>d.h),1);
+  const pL=10,pR=10,pB=30,pT=20;
+  const aW=c.width-pL-pR, aH=c.height-pB-pT;
+  const bW=Math.min(50,(aW/data.length)-10);
+  // Grid lines
+  ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+  [.25,.5,.75,1].forEach(t=>{ const y=pT+aH*(1-t); ctx.beginPath(); ctx.moveTo(pL,y); ctx.lineTo(pL+aW,y); ctx.stroke(); ctx.fillStyle='#94a3b8'; ctx.font='10px JetBrains Mono'; ctx.textAlign='right'; ctx.fillText((maxV*t).toFixed(0)+'h',pL-3,y+4); });
+  data.forEach((d,i)=>{
+    const x=pL+(i*(aW/data.length))+(aW/data.length-bW)/2;
+    const bH=Math.max(2,(d.h/maxV)*aH);
+    const y=pT+(aH-bH);
+    // Bar gradient
+    const grad=ctx.createLinearGradient(0,y,0,y+bH);
+    grad.addColorStop(0,'#1a56db'); grad.addColorStop(1,'#0891b2');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x,y,bW,bH,[4,4,0,0]);
+    else ctx.rect(x,y,bW,bH);
+    ctx.fill();
+    // Value label
+    ctx.fillStyle='#0d1b2a'; ctx.font='bold 11px Outfit'; ctx.textAlign='center';
+    ctx.fillText(d.h.toFixed(1)+'h',x+bW/2,y-5);
+    // Name
+    ctx.fillStyle='#546e7a'; ctx.font='11px Outfit';
+    ctx.fillText(d.nome,x+bW/2,c.height-8);
+  });
+}
+
+// ════════════════════════════════════════
+// EMPRESAS
+// ════════════════════════════════════════
+function openEmpModal(id=null){
+  ['eId','eRazao','eFantasia','eCNPJ','eTel','eEnd','eEmail'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('mEmpTitle').textContent='Nova Empresa';
+  if(id){
+    const e=ls.get(K.emps).find(x=>x.id===id);
+    if(!e) return;
+    document.getElementById('eId').value=e.id;
+    document.getElementById('eRazao').value=e.razao;
+    document.getElementById('eFantasia').value=e.fantasia||'';
+    document.getElementById('eCNPJ').value=e.cnpj||'';
+    document.getElementById('eTel').value=e.tel||'';
+    document.getElementById('eEnd').value=e.end||'';
+    document.getElementById('eEmail').value=e.email||'';
+    document.getElementById('mEmpTitle').textContent='Editar Empresa';
+  }
+  openM('mEmp');
+}
+function saveEmp(){
+  const razao=document.getElementById('eRazao').value.trim();
+  const cnpj=document.getElementById('eCNPJ').value.trim();
+  if(!razao) return toast('Informe a Razão Social.','err');
+  if(!cnpj)  return toast('Informe o CNPJ.','err');
+  const emps=ls.get(K.emps);
+  const id=document.getElementById('eId').value;
+  if(!id&&emps.length>=10) return toast('Limite de 10 empresas atingido.','err');
+  const obj={id:id||uid(),razao,fantasia:document.getElementById('eFantasia').value.trim(),cnpj,tel:document.getElementById('eTel').value.trim(),end:document.getElementById('eEnd').value.trim(),email:document.getElementById('eEmail').value.trim()};
+  if(id){ const i=emps.findIndex(e=>e.id===id); emps[i]=obj; toast('Empresa atualizada!'); }
+  else { emps.push(obj); toast('Empresa cadastrada!'); }
+  ls.set(K.emps,emps);
+  closeM('mEmp'); renderEmps(); refreshEmpSel();
+}
+function delEmp(id){
+  confirm2('Excluir esta empresa? Todos os funcionários e pontos serão removidos.',()=>{
+    ls.set(K.emps,ls.get(K.emps).filter(e=>e.id!==id));
+    ls.set(K.funcs,ls.get(K.funcs).filter(f=>f.empId!==id));
+    ls.set(K.pts,ls.get(K.pts).filter(p=>p.empId!==id));
+    if(localStorage.getItem(K.aEmp)===id){ localStorage.removeItem(K.aEmp); refreshEmpSel(); }
+    renderEmps(); toast('Empresa excluída.','warn');
+  });
+}
+function renderEmps(){
+  const emps=ls.get(K.emps);
+  const q=(document.getElementById('srchEmp')?.value||'').toLowerCase();
+  document.getElementById('empCount').textContent=`${emps.length}/10`;
+  const list=emps.filter(e=>e.razao.toLowerCase().includes(q)||(e.fantasia||'').toLowerCase().includes(q)||(e.cnpj||'').includes(q));
+  document.getElementById('empTbody').innerHTML=list.length?list.map(e=>`
+    <tr>
+      <td><strong>${e.razao}</strong></td>
+      <td>${e.fantasia||'–'}</td>
+      <td class="mono">${e.cnpj||'–'}</td>
+      <td>${e.tel||'–'}</td>
+      <td>${e.email||'–'}</td>
+      <td><div class="tda">
+        <button class="btn-icon edit" onclick="openEmpModal('${e.id}')">✏️</button>
+        <button class="btn-icon del"  onclick="delEmp('${e.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('')
+  :`<tr><td colspan="6" style="text-align:center;color:var(--ink4);padding:32px">Nenhuma empresa encontrada.</td></tr>`;
+}
+
+// ════════════════════════════════════════
+// FUNCIONÁRIOS
+// ════════════════════════════════════════
+function openFuncModal(id=null){
+  ['fId','fNome','fCPF','fCargo','fDept','fSal','fVhN','fVh50','fVh100'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('fEnt').value='08:00';
+  document.getElementById('fSai').value='17:00';
+  document.getElementById('fAlm').value='60';
+  document.getElementById('fAdm').value=today();
+  document.getElementById('fContrato').value='CLT';
+  document.getElementById('mFuncTitle').textContent='Novo Funcionário';
+  // Popular select de empresas
+  const empSel=document.getElementById('fEmpId');
+  const emps=ls.get(K.emps);
+  empSel.innerHTML='<option value="">Selecione uma empresa...</option>';
+  emps.forEach(e=>{ const o=document.createElement('option'); o.value=e.id; o.textContent=(e.fantasia||e.razao)+' — '+e.cnpj; empSel.appendChild(o); });
+  // Pré-selecionar empresa ativa
+  const aEmp=localStorage.getItem(K.aEmp)||'';
+  if(aEmp) empSel.value=aEmp;
+  if(id){
+    const f=ls.get(K.funcs).find(x=>x.id===id);
+    if(!f) return;
+    document.getElementById('fId').value=f.id;
+    document.getElementById('fNome').value=f.nome;
+    document.getElementById('fCPF').value=f.cpf;
+    document.getElementById('fCargo').value=f.cargo;
+    document.getElementById('fDept').value=f.dept;
+    document.getElementById('fAdm').value=f.adm;
+    document.getElementById('fContrato').value=f.contrato;
+    document.getElementById('fSal').value=f.sal||'';
+    document.getElementById('fVhN').value=f.vhN||'';
+    document.getElementById('fVh50').value=f.vh50||'';
+    document.getElementById('fVh100').value=f.vh100||'';
+    document.getElementById('fEnt').value=f.ent||'08:00';
+    document.getElementById('fSai').value=f.sai||'17:00';
+    document.getElementById('fAlm').value=f.alm||60;
+    empSel.value=f.empId||'';
+    document.getElementById('mFuncTitle').textContent='Editar Funcionário';
+  }
+  openM('mFunc');
+}
+function saveFunc(){
+  const nome=document.getElementById('fNome').value.trim();
+  const cpf=document.getElementById('fCPF').value.trim();
+  const cargo=document.getElementById('fCargo').value.trim();
+  const dept=document.getElementById('fDept').value.trim();
+  if(!nome)  return toast('Informe o nome.','err');
+  if(!cpf)   return toast('Informe o CPF.','err');
+  if(!cargo) return toast('Informe o cargo.','err');
+  if(!dept)  return toast('Informe o departamento.','err');
+  const empId=document.getElementById('fEmpId').value;
+  if(!empId) return toast('Selecione a empresa do funcionário.','err');
+  const funcs=ls.get(K.funcs);
+  const id=document.getElementById('fId').value;
+  const obj={id:id||uid(),empId,nome,cpf,cargo,dept,adm:document.getElementById('fAdm').value,contrato:document.getElementById('fContrato').value,sal:parseFloat(document.getElementById('fSal').value)||0,vhN:parseFloat(document.getElementById('fVhN').value)||0,vh50:parseFloat(document.getElementById('fVh50').value)||0,vh100:parseFloat(document.getElementById('fVh100').value)||0,ent:document.getElementById('fEnt').value,sai:document.getElementById('fSai').value,alm:parseInt(document.getElementById('fAlm').value)||60};
+  if(id){ const i=funcs.findIndex(f=>f.id===id); funcs[i]=obj; toast('Funcionário atualizado!'); }
+  else { funcs.push(obj); toast('Funcionário cadastrado!'); }
+  ls.set(K.funcs,funcs);
+  closeM('mFunc'); renderFuncs(); updateDeptFilter();
+}
+function delFunc(id){
+  confirm2('Excluir este funcionário e todos os seus registros de ponto?',()=>{
+    ls.set(K.funcs,ls.get(K.funcs).filter(f=>f.id!==id));
+    ls.set(K.pts,ls.get(K.pts).filter(p=>p.funcId!==id));
+    renderFuncs(); updateDeptFilter(); toast('Funcionário excluído.','warn');
+  });
+}
+function updateDeptFilter(){
+  const funcs=getFuncs(), sel=document.getElementById('filterDept');
+  if(!sel) return;
+  const cur=sel.value;
+  const depts=[...new Set(funcs.map(f=>f.dept))].sort();
+  sel.innerHTML='<option value="">Todos Departamentos</option>';
+  depts.forEach(d=>{ const o=document.createElement('option'); o.value=o.textContent=d; if(d===cur)o.selected=true; sel.appendChild(o); });
+}
+function renderFuncs(){
+  const allFuncs=ls.get(K.funcs);
+  const emps=ls.get(K.emps);
+  const empMap=Object.fromEntries(emps.map(e=>[e.id,e.fantasia||e.razao]));
+  const q=(document.getElementById('srchFunc')?.value||'').toLowerCase();
+  const dept=document.getElementById('filterDept')?.value||'';
+  // Mostra funcionários da empresa ativa OU todos se nenhuma ativa
+  const aEmp=localStorage.getItem(K.aEmp)||'';
+  const base=aEmp?allFuncs.filter(f=>f.empId===aEmp):allFuncs;
+  const list=base.filter(f=>(f.nome.toLowerCase().includes(q)||f.cpf.includes(q)||f.cargo.toLowerCase().includes(q))&&(!dept||f.dept===dept));
+  document.getElementById('funcTbody').innerHTML=list.length?list.map(f=>`
+    <tr>
+      <td><strong>${f.nome}</strong></td>
+      <td class="mono">${f.cpf}</td>
+      <td>${f.cargo}</td>
+      <td><span class="chip">${f.dept}</span></td>
+      <td style="font-size:.8rem;color:var(--blue);font-weight:600">${empMap[f.empId]||'–'}</td>
+      <td>${fmtD(f.adm)}</td>
+      <td class="mono" style="font-size:.78rem">${f.ent||'–'} – ${f.sai||'–'}</td>
+      <td><span class="sit sit-normal" style="font-size:.7rem">${f.contrato}</span></td>
+      <td><div class="tda">
+        <button class="btn-icon edit" onclick="openFuncModal('${f.id}')">✏️</button>
+        <button class="btn-icon del"  onclick="delFunc('${f.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('')
+  :`<tr><td colspan="9" style="text-align:center;color:var(--ink4);padding:32px">${!emps.length?'Cadastre uma empresa primeiro.':'Nenhum funcionário encontrado.'}</td></tr>`;
+}
+
+// ════════════════════════════════════════
+// FERIADOS
+// ════════════════════════════════════════
+function openFerModal(id=null){
+  document.getElementById('ferIdH').value='';
+  document.getElementById('ferData').value='';
+  document.getElementById('ferDesc').value='';
+  document.getElementById('ferTipo').value='Nacional';
+  document.getElementById('mFerTitle').textContent='Novo Feriado';
+  if(id){
+    const f=ls.get(K.fers).find(x=>x.id===id);
+    if(!f) return;
+    document.getElementById('ferIdH').value=f.id;
+    document.getElementById('ferData').value=f.data;
+    document.getElementById('ferDesc').value=f.desc;
+    document.getElementById('ferTipo').value=f.tipo;
+    document.getElementById('mFerTitle').textContent='Editar Feriado';
+  }
+  openM('mFer');
+}
+function saveFer(){
+  const data=document.getElementById('ferData').value;
+  const desc=document.getElementById('ferDesc').value.trim();
+  if(!data) return toast('Informe a data.','err');
+  if(!desc) return toast('Informe a descrição.','err');
+  const fers=ls.get(K.fers);
+  const id=document.getElementById('ferIdH').value;
+  const obj={id:id||uid(),data,desc,tipo:document.getElementById('ferTipo').value};
+  if(id){ const i=fers.findIndex(f=>f.id===id); fers[i]=obj; toast('Feriado atualizado!'); }
+  else {
+    if(fers.some(f=>f.data===data)) return toast('Já existe feriado nesta data.','err');
+    fers.push(obj); toast('Feriado cadastrado!');
+  }
+  ls.set(K.fers,fers);
+  closeM('mFer'); renderFers();
+}
+function delFer(id){
+  confirm2('Excluir este feriado?',()=>{ ls.set(K.fers,ls.get(K.fers).filter(f=>f.id!==id)); renderFers(); toast('Feriado excluído.','warn'); });
+}
+function renderFers(){
+  const fers=ls.get(K.fers).sort((a,b)=>a.data.localeCompare(b.data));
+  document.getElementById('ferTbody').innerHTML=fers.length?fers.map(f=>`
+    <tr>
+      <td class="mono">${fmtD(f.data)}</td>
+      <td>${wday(f.data)}</td>
+      <td><strong>${f.desc}</strong></td>
+      <td><span class="sit sit-feriado">${f.tipo}</span></td>
+      <td><div class="tda">
+        <button class="btn-icon edit" onclick="openFerModal('${f.id}')">✏️</button>
+        <button class="btn-icon del"  onclick="delFer('${f.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('')
+  :`<tr><td colspan="5" style="text-align:center;color:var(--ink4);padding:32px">Nenhum feriado cadastrado.</td></tr>`;
+}
+
+// ════════════════════════════════════════
+// PONTO
+// ════════════════════════════════════════
+function initPonto(){
+  const sel=document.getElementById('ptFuncSel');
+  const funcs=getFuncs(), cur=sel.value;
+  sel.innerHTML='<option value="">Selecione um funcionário...</option>';
+  funcs.forEach(f=>{ const o=document.createElement('option'); o.value=f.id; o.textContent=f.nome; if(f.id===cur)o.selected=true; sel.appendChild(o); });
+  if(!document.getElementById('ptMes').value){ const n=new Date(); document.getElementById('ptMes').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; }
+  loadPonto();
+}
+
+function fmtBRL(v){return'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+
+function calcFin(func,extMins,atrMins){
+  const vh=func.vhN||0;
+  const vh50=func.vh50||(vh*1.5)||0;
+  const vh100=func.vh100||(vh*2)||0;
+  // Horas extras pagas a 50% por padrão (jornada semanal normal)
+  const totExt=(extMins/60)*vh50;
+  // Desconto de atraso pelo valor hora normal
+  const totAtr=(atrMins/60)*vh;
+  return{totExt,totAtr,liq:(func.sal||0)+totExt-totAtr,vh50};
+}
+
+function loadPonto(){
+  const funcId=document.getElementById('ptFuncSel').value;
+  const ym=document.getElementById('ptMes').value;
+  const wrap=document.getElementById('ptWrap');
+  const empty=document.getElementById('ptEmpty');
+  const bar=document.getElementById('ptSumBar');
+  const finBar=document.getElementById('ptFinBar');
+  if(!funcId||!ym){ wrap.style.display='none'; bar.style.display='none'; finBar.style.display='none'; empty.style.display='block'; return; }
+  const func=ls.get(K.funcs).find(f=>f.id===funcId);
+  if(!func) return;
+  wrap.style.display='block'; bar.style.display='flex'; finBar.style.display='block'; empty.style.display='none';
+  const dias=daysOfMonth(ym);
+  const tbody=document.getElementById('ptTbody');
+  tbody.innerHTML='';
+  dias.forEach(data=>{
+    const we=isWE(data), hol=isHol(data);
+    const reg=getOrCreatePt(funcId,data);
+    if(hol&&reg.sit==='Normal'){ setPtField(reg.id,'sit','Feriado'); reg.sit='Feriado'; }
+    const calc=calcDia(reg,func);
+    const fin=calcFin(func,calc.extra>0?calc.extra:0,calc.atr>0?calc.atr:0);
+    const rowCls=we?'we-row':hol?'hol-row':'';
+    const sits=['Normal','Falta','Atestado','Feriado','Folga','Suspensão','Outros'];
+    const tr=document.createElement('tr');
+    tr.id=`pr-${reg.id}`; tr.className=rowCls;
+    tr.innerHTML=`
+      <td style="white-space:nowrap">
+        <span style="font-weight:700;font-size:.8rem">${fmtD(data)}</span>
+        <span style="font-size:.65rem;color:var(--ink4);margin-left:3px">${wday(data)}</span>
+      </td>
+      <td><select class="ss" onchange="onSitChange('${reg.id}','${funcId}','${data}',this.value)">${sits.map(s=>`<option value="${s}"${reg.sit===s?' selected':''}>${s}</option>`).join('')}</select></td>
+      <td><input type="time" class="ti" id="ti-${reg.id}-ent"   value="${reg.ent||''}"   onchange="onTimeChange('${reg.id}','${funcId}','ent',this.value)"/></td>
+      <td><input type="time" class="ti" id="ti-${reg.id}-saAlm" value="${reg.saAlm||''}" onchange="onTimeChange('${reg.id}','${funcId}','saAlm',this.value)"/></td>
+      <td><input type="time" class="ti" id="ti-${reg.id}-vaAlm" value="${reg.vaAlm||''}" onchange="onTimeChange('${reg.id}','${funcId}','vaAlm',this.value)"/></td>
+      <td><input type="time" class="ti" id="ti-${reg.id}-sai"   value="${reg.sai||''}"   onchange="onTimeChange('${reg.id}','${funcId}','sai',this.value)"/></td>
+      <td class="td-trab" id="tc-t-${reg.id}">${calc.trab>0?toHHMM(calc.trab):'–'}</td>
+      <td class="td-ext"  id="tc-e-${reg.id}">${calc.extra>0?toHHMM(calc.extra):'–'}</td>
+      <td class="td-val-ext" id="tc-ve-${reg.id}">${calc.extra>0?fmtBRL(fin.totExt):'–'}</td>
+      <td class="td-atr"  id="tc-a-${reg.id}">${calc.atr>0?toHHMM(calc.atr):'–'}</td>
+      <td class="td-val-atr" id="tc-va-${reg.id}">${calc.atr>0?fmtBRL(fin.totAtr):'–'}</td>
+      <td><button class="btn-icon del" onclick="clearRow('${reg.id}','${funcId}')" title="Limpar dia" style="font-size:12px">🗑</button></td>`;
+    tbody.appendChild(tr);
+  });
+  updatePtSummary(func,ym);
+}
+
+function onTimeChange(regId,funcId,field,val){
+  setPtField(regId,field,val);
+  refreshRow(regId,funcId);
+  const ym=document.getElementById('ptMes').value;
+  const f=ls.get(K.funcs).find(x=>x.id===funcId);
+  if(f) updatePtSummary(f,ym);
+}
+
+function onSitChange(regId,funcId,data,val){
+  setPtField(regId,'sit',val);
+  if(['Feriado','Atestado','Folga','Falta','Suspensão'].includes(val)){
+    ['ent','saAlm','vaAlm','sai'].forEach(f=>{ setPtField(regId,f,''); const el=document.getElementById(`ti-${regId}-${f}`); if(el)el.value=''; });
+  }
+  refreshRow(regId,funcId);
+  const ym=document.getElementById('ptMes').value;
+  const f=ls.get(K.funcs).find(x=>x.id===funcId);
+  if(f) updatePtSummary(f,ym);
+}
+
+function refreshRow(regId,funcId){
+  const reg=ls.get(K.pts).find(p=>p.id===regId);
+  const func=ls.get(K.funcs).find(f=>f.id===funcId);
+  if(!reg||!func) return;
+  const c=calcDia(reg,func);
+  const fin=calcFin(func,c.extra>0?c.extra:0,c.atr>0?c.atr:0);
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el)el.textContent=v; };
+  set(`tc-t-${regId}`, c.trab>0?toHHMM(c.trab):'–');
+  set(`tc-e-${regId}`, c.extra>0?toHHMM(c.extra):'–');
+  set(`tc-ve-${regId}`,c.extra>0?fmtBRL(fin.totExt):'–');
+  set(`tc-a-${regId}`, c.atr>0?toHHMM(c.atr):'–');
+  set(`tc-va-${regId}`,c.atr>0?fmtBRL(fin.totAtr):'–');
+}
+
+function clearRow(regId,funcId){
+  confirm2('Limpar todos os horários deste dia?',()=>{
+    ['ent','saAlm','vaAlm','sai'].forEach(f=>{ setPtField(regId,f,''); const el=document.getElementById(`ti-${regId}-${f}`); if(el)el.value=''; });
+    setPtField(regId,'sit','Normal');
+    const sel=document.querySelector(`#pr-${regId} .ss`); if(sel)sel.value='Normal';
+    refreshRow(regId,funcId);
+    const ym=document.getElementById('ptMes').value;
+    const func=ls.get(K.funcs).find(f=>f.id===funcId);
+    if(func) updatePtSummary(func,ym);
+    toast('Linha limpa.');
+  });
+}
+
+function updatePtSummary(func,ym){
+  const recs=ls.get(K.pts).filter(p=>p.funcId===func.id&&p.data.startsWith(ym));
+  let trab=0,ext=0,atr=0,prev=0;
+  daysOfMonth(ym).forEach(d=>{ if(!isWE(d)&&!isHol(d)) prev+=jornadaMins(func); });
+  recs.forEach(r=>{ const c=calcDia(r,func); trab+=c.trab; if(c.extra>0)ext+=c.extra; if(c.atr>0)atr+=c.atr; });
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el)el.textContent=v; };
+  set('ptTrab',toHHMM(trab)); set('ptPrev',toHHMM(prev));
+  set('ptExt',toHHMM(ext)); set('ptAtr',toHHMM(atr));
+  set('ptBanco',toHHMM(trab-prev));
+  // Painel financeiro
+  const vh=func.vhN||0, vh50=func.vh50||(vh*1.5)||0;
+  const totExt=(ext/60)*vh50;
+  const totAtr=(atr/60)*vh;
+  const liq=(func.sal||0)+totExt-totAtr;
+  set('finSal',fmtBRL(func.sal||0));
+  set('finVhN',fmtBRL(vh)+'/h');
+  set('finExtH',toHHMM(ext));
+  set('finVh50',fmtBRL(vh50)+'/h');
+  set('finTotExt',fmtBRL(totExt));
+  set('finAtrH',toHHMM(atr));
+  set('finTotAtr','- '+fmtBRL(totAtr));
+  const liqEl=document.getElementById('finLiq');
+  if(liqEl){ liqEl.textContent=fmtBRL(liq); liqEl.className='fin-val '+(liq>=func.sal?'b':'r'); }
+}
+
+// Preencher dias úteis com jornada padrão
+function preencherJornada(){
+  const funcId=document.getElementById('ptFuncSel').value;
+  const ym=document.getElementById('ptMes').value;
+  if(!funcId||!ym) return toast('Selecione funcionário e mês.','err');
+  const func=ls.get(K.funcs).find(f=>f.id===funcId);
+  if(!func) return;
+  confirm2('Preencher todos os dias úteis com o horário padrão do funcionário?',()=>{
+    daysOfMonth(ym).forEach(data=>{
+      if(!isWE(data)&&!isHol(data)){
+        const reg=getOrCreatePt(funcId,data);
+        if(reg.sit==='Normal'&&!reg.ent){
+          setPtField(reg.id,'ent',func.ent||'08:00');
+          setPtField(reg.id,'sai',func.sai||'17:00');
+          // Almoço padrão: saída 12:00, volta 13:00
+          const almMins=func.alm||60;
+          setPtField(reg.id,'saAlm','12:00');
+          const voltaH=12+Math.floor(almMins/60), voltaM=almMins%60;
+          setPtField(reg.id,'vaAlm',`${String(voltaH).padStart(2,'0')}:${String(voltaM).padStart(2,'0')}`);
+        }
+      }
+    });
+    loadPonto(); toast('Horários preenchidos!');
+  });
+}
+
+// ════════════════════════════════════════
+// RELATÓRIOS
+// ════════════════════════════════════════
+function initRel(){
+  const sel=document.getElementById('relFuncSel');
+  const allFuncs=ls.get(K.funcs), cur=sel.value;
+  const aEmp=localStorage.getItem(K.aEmp)||'';
+  const base=aEmp?allFuncs.filter(f=>f.empId===aEmp):allFuncs;
+  sel.innerHTML='<option value="">Todos os Funcionários</option>';
+  base.forEach(f=>{ const o=document.createElement('option'); o.value=f.id; o.textContent=f.nome; if(f.id===cur)o.selected=true; sel.appendChild(o); });
+  if(!document.getElementById('relMes').value){ const n=new Date(); document.getElementById('relMes').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; }
+}
+
+// Helper: calcular totais de um funcionário no mês
+function calcFuncMes(func,ym){
+  const dias=daysOfMonth(ym);
+  let totT=0,totE=0,totA=0,totP=0;
+  const rows=[];
+  dias.forEach(data=>{
+    const we=isWE(data),hol=isHol(data);
+    const reg=ls.get(K.pts).find(p=>p.funcId===func.id&&p.data===data)||{sit:we?'Folga':hol?'Feriado':'Normal',ent:'',saAlm:'',vaAlm:'',sai:''};
+    const c=calcDia(reg,func);
+    if(!we&&!hol) totP+=jornadaMins(func);
+    totT+=c.trab; if(c.extra>0)totE+=c.extra; if(c.atr>0)totA+=c.atr;
+    rows.push({data,we,hol,reg,c});
+  });
+  const banco=totT-totP;
+  const fin=calcFin(func,totE,totA);
+  return{totT,totE,totA,totP,banco,fin,rows};
+}
+
+// Header de empresa reutilizável
+function empHeader(emp,titulo,mesNome){
+  return`<div class="rel-hd">
+    <div>
+      <div class="rel-emp">${emp?emp.fantasia||emp.razao:'—'}</div>
+      <div style="font-size:.74rem;color:var(--ink4)">${emp?.cnpj||''} ${emp?.end?'| '+emp.end:''}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:1rem;font-weight:800;color:var(--ink)">${titulo}</div>
+      <div style="font-size:.82rem;color:var(--ink3)">${mesNome}</div>
+    </div>
+  </div>`;
+}
+
+// Totais financeiros reutilizáveis
+function totaisHTML(d){
+  const banco=d.banco>=0;
+  return`<div class="rel-tots">
+    <div class="rt bl"><div class="rt-v">${toHHMM(d.totT)}</div><div class="rt-l">Total Trabalhado</div></div>
+    <div class="rt bl"><div class="rt-v">${toHHMM(d.totP)}</div><div class="rt-l">Horas Previstas</div></div>
+    <div class="rt gr"><div class="rt-v">${toHHMM(d.totE)}</div><div class="rt-l">Horas Extras</div></div>
+    <div class="rt re"><div class="rt-v">${toHHMM(d.totA)}</div><div class="rt-l">Atrasos/Faltas</div></div>
+    <div class="rt ${banco?'gr':'re'}"><div class="rt-v">${toHHMM(d.banco)}</div><div class="rt-l">Banco de Horas</div></div>
+    <div class="rt gr"><div class="rt-v">${fmtBRL(d.fin.totExt)}</div><div class="rt-l">Valor Extras</div></div>
+    <div class="rt re"><div class="rt-v">- ${fmtBRL(d.fin.totAtr)}</div><div class="rt-l">Desc. Atrasos</div></div>
+    <div class="rt am"><div class="rt-v">${fmtBRL(d.fin.liq)}</div><div class="rt-l">Saldo Líquido</div></div>
+  </div>`;
+}
+
+function gerarRel(){
+  const funcId=document.getElementById('relFuncSel').value;
+  const ym=document.getElementById('relMes').value;
+  const tipo=document.getElementById('relTipo').value;
+  if(!ym) return toast('Informe o mês.','err');
+  const emp=getAEmp();
+  const aEmp=localStorage.getItem(K.aEmp)||'';
+  const allF=ls.get(K.funcs);
+  const base=aEmp?allF.filter(f=>f.empId===aEmp):allF;
+  const funcs=funcId?[allF.find(f=>f.id===funcId)].filter(Boolean):base;
+  if(!funcs.length) return toast('Nenhum funcionário encontrado.','err');
+  const out=document.getElementById('relOutput');
+  out.innerHTML='';
+  const [y,m]=ym.split('-');
+  const mesNome=new Date(+y,+m-1,1).toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  const mesLabel=mesNome.charAt(0).toUpperCase()+mesNome.slice(1);
+
+  if(tipo==='individual'){
+    // ── RELATÓRIO INDIVIDUAL (ESPELHO DE PONTO) ──
+    funcs.forEach(func=>{
+      const d=calcFuncMes(func,ym);
+      const rows=d.rows.map(({data,we,hol,reg,c})=>{
+        const rStyle=we?'style="background:#fafbfd;color:#94a3b8"':hol?'style="background:var(--blue-xl)"':'';
+        const sitKey=(reg.sit||'Normal').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'-');
+        const fin2=calcFin(func,c.extra>0?c.extra:0,c.atr>0?c.atr:0);
+        return`<tr ${rStyle}>
+          <td>${fmtD(data)}</td><td>${wday(data)}</td>
+          <td><span class="sit sit-${sitKey}">${reg.sit||'Normal'}</span></td>
+          <td class="mono">${reg.ent||'–'}</td><td class="mono">${reg.saAlm||'–'}</td>
+          <td class="mono">${reg.vaAlm||'–'}</td><td class="mono">${reg.sai||'–'}</td>
+          <td class="td-trab">${c.trab>0?toHHMM(c.trab):'–'}</td>
+          <td class="td-ext">${c.extra>0?toHHMM(c.extra):'–'}</td>
+          <td class="td-val-ext">${c.extra>0?fmtBRL(fin2.totExt):'–'}</td>
+          <td class="td-atr">${c.atr>0?toHHMM(c.atr):'–'}</td>
+          <td class="td-val-atr">${c.atr>0?fmtBRL(fin2.totAtr):'–'}</td>
+        </tr>`;
+      }).join('');
+      const card=document.createElement('div');
+      card.className='rel-card';
+      card.innerHTML=`
+        ${empHeader(emp,'Espelho de Ponto Individual',mesLabel)}
+        <div class="rel-func-bar">
+          <div class="rfi"><span class="rfi-l">Funcionário</span><span class="rfi-v">${func.nome}</span></div>
+          <div class="rfi"><span class="rfi-l">CPF</span><span class="rfi-v mono">${func.cpf}</span></div>
+          <div class="rfi"><span class="rfi-l">Cargo</span><span class="rfi-v">${func.cargo}</span></div>
+          <div class="rfi"><span class="rfi-l">Departamento</span><span class="rfi-v">${func.dept}</span></div>
+          <div class="rfi"><span class="rfi-l">Admissão</span><span class="rfi-v">${fmtD(func.adm)}</span></div>
+          <div class="rfi"><span class="rfi-l">Jornada</span><span class="rfi-v mono">${func.ent||'–'} – ${func.sai||'–'}</span></div>
+          <div class="rfi"><span class="rfi-l">Contrato</span><span class="rfi-v">${func.contrato}</span></div>
+          <div class="rfi"><span class="rfi-l">Salário Base</span><span class="rfi-v">${fmtBRL(func.sal||0)}</span></div>
+          <div class="rfi"><span class="rfi-l">Valor H. Normal</span><span class="rfi-v">${fmtBRL(func.vhN||0)}/h</span></div>
+          <div class="rfi"><span class="rfi-l">Valor H. Extra 50%</span><span class="rfi-v">${fmtBRL(func.vh50||0)}/h</span></div>
+        </div>
+        <div class="tw" style="margin-top:12px">
+          <table class="dt pt-compact">
+            <thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th><th>Total</th><th>H.Extra</th><th>Vl.Extra</th><th>Atraso</th><th>Desc.Atr</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        ${totaisHTML(d)}
+        <div class="sig-row">
+          <div class="sig-box"><div class="sig-line">Assinatura do Funcionário</div></div>
+          <div class="sig-box"><div class="sig-line">Assinatura do Responsável RH</div></div>
+          <div class="sig-box"><div class="sig-line">Data / Carimbo</div></div>
+        </div>`;
+      out.appendChild(card);
+    });
+
+  } else if(tipo==='sintetico'){
+    // ── RELATÓRIO SINTÉTICO GERAL ──
+    const card=document.createElement('div');
+    card.className='rel-card';
+    let gtotT=0,gtotE=0,gtotA=0,gtotP=0,gtotExtVal=0,gtotAtrVal=0;
+    const rows=funcs.map(func=>{
+      const d=calcFuncMes(func,ym);
+      gtotT+=d.totT; gtotE+=d.totE; gtotA+=d.totA; gtotP+=d.totP;
+      gtotExtVal+=d.fin.totExt; gtotAtrVal+=d.fin.totAtr;
+      const banco=d.banco>=0;
+      return`<tr>
+        <td><strong>${func.nome}</strong></td>
+        <td style="font-size:.75rem;color:var(--ink3)">${func.cargo}</td>
+        <td style="font-size:.75rem"><span class="chip">${func.dept}</span></td>
+        <td class="mono td-trab">${toHHMM(d.totP)}</td>
+        <td class="mono td-trab">${toHHMM(d.totT)}</td>
+        <td class="mono td-ext">${d.totE>0?toHHMM(d.totE):'–'}</td>
+        <td class="mono td-val-ext">${d.totE>0?fmtBRL(d.fin.totExt):'–'}</td>
+        <td class="mono td-atr">${d.totA>0?toHHMM(d.totA):'–'}</td>
+        <td class="mono td-val-atr">${d.totA>0?fmtBRL(d.fin.totAtr):'–'}</td>
+        <td class="mono" style="font-weight:700;color:${banco?'var(--green)':'var(--red)'}">${toHHMM(d.banco)}</td>
+        <td class="mono" style="font-weight:700;color:var(--blue)">${fmtBRL(d.fin.liq)}</td>
+      </tr>`;
+    }).join('');
+    const gLiq=funcs.reduce((s,f)=>s+(f.sal||0),0)+gtotExtVal-gtotAtrVal;
+    card.innerHTML=`
+      ${empHeader(emp,'Relatório Sintético Geral',mesLabel)}
+      <div class="tw" style="margin-top:12px">
+        <table class="dt pt-compact">
+          <thead><tr>
+            <th>Funcionário</th><th>Cargo</th><th>Dept.</th>
+            <th>H.Previstas</th><th>H.Trabalhadas</th>
+            <th>H.Extras</th><th>Vl.Extras</th>
+            <th>Atrasos</th><th>Desc.Atrasos</th>
+            <th>Banco</th><th>Saldo Líq.</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot style="background:var(--blue-xl);font-weight:800">
+            <tr>
+              <td colspan="3" style="font-weight:800;color:var(--blue)">TOTAIS GERAIS</td>
+              <td class="mono">${toHHMM(gtotP)}</td>
+              <td class="mono">${toHHMM(gtotT)}</td>
+              <td class="mono td-ext">${toHHMM(gtotE)}</td>
+              <td class="mono td-val-ext">${fmtBRL(gtotExtVal)}</td>
+              <td class="mono td-atr">${toHHMM(gtotA)}</td>
+              <td class="mono td-val-atr">${fmtBRL(gtotAtrVal)}</td>
+              <td class="mono" style="color:${(gtotT-gtotP)>=0?'var(--green)':'var(--red)'}">${toHHMM(gtotT-gtotP)}</td>
+              <td class="mono" style="color:var(--blue)">${fmtBRL(gLiq)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:var(--paper);border-radius:var(--r);font-size:.78rem;color:var(--ink3)">
+        <strong>${funcs.length} funcionário(s)</strong> · Período: ${mesLabel} · Gerado em: ${new Date().toLocaleString('pt-BR')}
+      </div>`;
+    out.appendChild(card);
+
+  } else if(tipo==='analitico'){
+    // ── RELATÓRIO ANALÍTICO GERAL ──
+    const card=document.createElement('div');
+    card.className='rel-card';
+    let allRows='';
+    funcs.forEach(func=>{
+      const d=calcFuncMes(func,ym);
+      // Cabeçalho do funcionário dentro da tabela
+      allRows+=`<tr style="background:var(--ink);color:#fff">
+        <td colspan="13" style="font-weight:700;font-size:.82rem;padding:6px 10px">
+          👤 ${func.nome} — ${func.cargo} / ${func.dept} | Sal: ${fmtBRL(func.sal||0)} | VH: ${fmtBRL(func.vhN||0)}/h | HE50%: ${fmtBRL(func.vh50||0)}/h
+        </td>
+      </tr>`;
+      d.rows.forEach(({data,we,hol,reg,c})=>{
+        const rStyle=we?'style="background:#fafbfd;color:#94a3b8"':hol?'style="background:var(--blue-xl)"':'';
+        const sitKey=(reg.sit||'Normal').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'-');
+        const fin2=calcFin(func,c.extra>0?c.extra:0,c.atr>0?c.atr:0);
+        allRows+=`<tr ${rStyle}>
+          <td style="font-size:.72rem;white-space:nowrap">${fmtD(data)} ${wday(data)}</td>
+          <td><span class="sit sit-${sitKey}" style="font-size:.65rem">${reg.sit||'Normal'}</span></td>
+          <td class="mono">${reg.ent||'–'}</td><td class="mono">${reg.saAlm||'–'}</td>
+          <td class="mono">${reg.vaAlm||'–'}</td><td class="mono">${reg.sai||'–'}</td>
+          <td class="td-trab">${c.trab>0?toHHMM(c.trab):'–'}</td>
+          <td class="td-ext">${c.extra>0?toHHMM(c.extra):'–'}</td>
+          <td class="td-val-ext">${c.extra>0?fmtBRL(fin2.totExt):'–'}</td>
+          <td class="td-atr">${c.atr>0?toHHMM(c.atr):'–'}</td>
+          <td class="td-val-atr">${c.atr>0?fmtBRL(fin2.totAtr):'–'}</td>
+          <td class="mono" style="font-size:.72rem;color:var(--ink3)">${func.nome.split(' ')[0]}</td>
+        </tr>`;
+      });
+      // Sub-total do funcionário
+      allRows+=`<tr style="background:var(--blue-l);font-weight:700">
+        <td colspan="2" style="font-size:.72rem;color:var(--blue)">▶ Sub-total: ${func.nome.split(' ')[0]}</td>
+        <td colspan="4"></td>
+        <td class="mono td-trab">${toHHMM(d.totT)}</td>
+        <td class="mono td-ext">${d.totE>0?toHHMM(d.totE):'–'}</td>
+        <td class="mono td-val-ext">${d.totE>0?fmtBRL(d.fin.totExt):'–'}</td>
+        <td class="mono td-atr">${d.totA>0?toHHMM(d.totA):'–'}</td>
+        <td class="mono td-val-atr">${d.totA>0?fmtBRL(d.fin.totAtr):'–'}</td>
+        <td class="mono" style="color:var(--blue)">${fmtBRL(d.fin.liq)}</td>
+      </tr>`;
+    });
+    card.innerHTML=`
+      ${empHeader(emp,'Relatório Analítico Geral',mesLabel)}
+      <div class="tw" style="margin-top:12px">
+        <table class="dt pt-compact">
+          <thead><tr>
+            <th>Data/Dia</th><th>Situação</th><th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th>
+            <th>Total</th><th>H.Extra</th><th>Vl.Extra</th><th>Atraso</th><th>Desc.Atr</th><th>Func.</th>
+          </tr></thead>
+          <tbody>${allRows}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:var(--paper);border-radius:var(--r);font-size:.78rem;color:var(--ink3)">
+        <strong>${funcs.length} funcionário(s)</strong> · Período: ${mesLabel} · Gerado em: ${new Date().toLocaleString('pt-BR')}
+      </div>`;
+    out.appendChild(card);
+  }
+  toast('Relatório gerado com sucesso!');
+}
+
+// ════════════════════════════════════════
+// MASKS
+// ════════════════════════════════════════
+function mCNPJ(el){ let v=el.value.replace(/\D/g,'').slice(0,14); v=v.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2'); el.value=v; }
+function mCPF(el){ let v=el.value.replace(/\D/g,'').slice(0,11); v=v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'); el.value=v; }
+function mPhone(el){ let v=el.value.replace(/\D/g,'').slice(0,11); if(v.length<=10) v=v.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{4})(\d)/,'$1-$2'); else v=v.replace(/(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d)/,'$1-$2'); el.value=v; }
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  startClock();
+  refreshEmpSel();
+  renderDash();
+});
 </script>
-
 </body>
 </html>
