@@ -694,6 +694,7 @@ select{cursor:pointer}
         <div class="fg"><label>Valor Hora Normal (R$)</label><input type="number" id="fVhN" placeholder="0,00" min="0" step="0.01"/></div>
       </div>
       <div class="fr">
+        <div class="fg"><label>Hora Extra 25% (R$)</label><input type="number" id="fVh25" placeholder="0,00" min="0" step="0.01"/></div>
         <div class="fg"><label>Hora Extra 50% (R$)</label><input type="number" id="fVh50" placeholder="0,00" min="0" step="0.01"/></div>
         <div class="fg"><label>Hora Extra 100% (R$)</label><input type="number" id="fVh100" placeholder="0,00" min="0" step="0.01"/></div>
       </div>
@@ -1032,7 +1033,7 @@ function renderEmps(){
 // FUNCIONÁRIOS
 // ════════════════════════════════════════
 function openFuncModal(id=null){
-  ['fId','fNome','fCPF','fCargo','fDept','fSal','fVhN','fVh50','fVh100'].forEach(f=>document.getElementById(f).value='');
+  ['fId','fNome','fCPF','fCargo','fDept','fSal','fVhN','fVh25','fVh50','fVh100'].forEach(f=>document.getElementById(f).value='');
   document.getElementById('fEnt').value='08:00';
   document.getElementById('fSai').value='17:00';
   document.getElementById('fAlm').value='60';
@@ -1059,6 +1060,7 @@ function openFuncModal(id=null){
     document.getElementById('fContrato').value=f.contrato;
     document.getElementById('fSal').value=f.sal||'';
     document.getElementById('fVhN').value=f.vhN||'';
+    document.getElementById('fVh25').value=f.vh25||'';
     document.getElementById('fVh50').value=f.vh50||'';
     document.getElementById('fVh100').value=f.vh100||'';
     document.getElementById('fEnt').value=f.ent||'08:00';
@@ -1082,7 +1084,7 @@ function saveFunc(){
   if(!empId) return toast('Selecione a empresa do funcionário.','err');
   const funcs=ls.get(K.funcs);
   const id=document.getElementById('fId').value;
-  const obj={id:id||uid(),empId,nome,cpf,cargo,dept,adm:document.getElementById('fAdm').value,contrato:document.getElementById('fContrato').value,sal:parseFloat(document.getElementById('fSal').value)||0,vhN:parseFloat(document.getElementById('fVhN').value)||0,vh50:parseFloat(document.getElementById('fVh50').value)||0,vh100:parseFloat(document.getElementById('fVh100').value)||0,ent:document.getElementById('fEnt').value,sai:document.getElementById('fSai').value,alm:parseInt(document.getElementById('fAlm').value)||60};
+  const obj={id:id||uid(),empId,nome,cpf,cargo,dept,adm:document.getElementById('fAdm').value,contrato:document.getElementById('fContrato').value,sal:parseFloat(document.getElementById('fSal').value)||0,vhN:parseFloat(document.getElementById('fVhN').value)||0,vh25:parseFloat(document.getElementById('fVh25').value)||0,vh50:parseFloat(document.getElementById('fVh50').value)||0,vh100:parseFloat(document.getElementById('fVh100').value)||0,ent:document.getElementById('fEnt').value,sai:document.getElementById('fSai').value,alm:parseInt(document.getElementById('fAlm').value)||60};
   if(id){ const i=funcs.findIndex(f=>f.id===id); funcs[i]=obj; toast('Funcionário atualizado!'); }
   else { funcs.push(obj); toast('Funcionário cadastrado!'); }
   ls.set(K.funcs,funcs);
@@ -1191,9 +1193,34 @@ function renderFers(){
 // ════════════════════════════════════════
 function initPonto(){
   const sel=document.getElementById('ptFuncSel');
-  const funcs=getFuncs(), cur=sel.value;
+  const cur=sel.value;
+  // Usa todos os funcionários se não houver empresa selecionada, senão filtra pela ativa
+  const aEmp=localStorage.getItem(K.aEmp)||'';
+  const allFuncs=ls.get(K.funcs);
+  const funcs=aEmp?allFuncs.filter(f=>f.empId===aEmp):allFuncs;
+  const emps=ls.get(K.emps);
+  const empMap=Object.fromEntries(emps.map(e=>[e.id,e.fantasia||e.razao]));
   sel.innerHTML='<option value="">Selecione um funcionário...</option>';
-  funcs.forEach(f=>{ const o=document.createElement('option'); o.value=f.id; o.textContent=f.nome; if(f.id===cur)o.selected=true; sel.appendChild(o); });
+  if(!funcs.length){
+    const o=document.createElement('option');
+    o.disabled=true; o.textContent='— Nenhum funcionário cadastrado —';
+    sel.appendChild(o);
+  } else {
+    // Agrupa por empresa para melhor legibilidade
+    const byEmp={};
+    funcs.forEach(f=>{ if(!byEmp[f.empId]) byEmp[f.empId]=[]; byEmp[f.empId].push(f); });
+    Object.entries(byEmp).forEach(([eid,flist])=>{
+      const grp=document.createElement('optgroup');
+      grp.label=empMap[eid]||'Empresa';
+      flist.forEach(f=>{
+        const o=document.createElement('option');
+        o.value=f.id; o.textContent=f.nome+' ('+f.cargo+')';
+        if(f.id===cur) o.selected=true;
+        grp.appendChild(o);
+      });
+      sel.appendChild(grp);
+    });
+  }
   if(!document.getElementById('ptMes').value){ const n=new Date(); document.getElementById('ptMes').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; }
   loadPonto();
 }
@@ -1202,13 +1229,15 @@ function fmtBRL(v){return'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3
 
 function calcFin(func,extMins,atrMins){
   const vh=func.vhN||0;
+  const vh25=func.vh25||(vh*1.25)||0;
   const vh50=func.vh50||(vh*1.5)||0;
   const vh100=func.vh100||(vh*2)||0;
-  // Horas extras pagas a 50% por padrão (jornada semanal normal)
-  const totExt=(extMins/60)*vh50;
-  // Desconto de atraso pelo valor hora normal
+  // Usa vh50 como padrão para horas extras (pode ser customizado por empresa)
+  // Se vh25 > 0 e vh50 == 0: usa vh25; senão usa vh50
+  const taxaExt = vh50>0?vh50:(vh25>0?vh25:vh*1.5);
+  const totExt=(extMins/60)*taxaExt;
   const totAtr=(atrMins/60)*vh;
-  return{totExt,totAtr,liq:(func.sal||0)+totExt-totAtr,vh50};
+  return{totExt,totAtr,liq:(func.sal||0)+totExt-totAtr,vh25,vh50,vh100,taxaExt};
 }
 
 function loadPonto(){
@@ -1312,19 +1341,18 @@ function updatePtSummary(func,ym){
   set('ptExt',toHHMM(ext)); set('ptAtr',toHHMM(atr));
   set('ptBanco',toHHMM(trab-prev));
   // Painel financeiro
-  const vh=func.vhN||0, vh50=func.vh50||(vh*1.5)||0;
-  const totExt=(ext/60)*vh50;
-  const totAtr=(atr/60)*vh;
-  const liq=(func.sal||0)+totExt-totAtr;
+  const fin=calcFin(func,ext,atr);
   set('finSal',fmtBRL(func.sal||0));
-  set('finVhN',fmtBRL(vh)+'/h');
+  set('finVhN',fmtBRL(func.vhN||0)+'/h');
   set('finExtH',toHHMM(ext));
-  set('finVh50',fmtBRL(vh50)+'/h');
-  set('finTotExt',fmtBRL(totExt));
+  // Mostra taxa ativa de hora extra (25%, 50% ou calculada)
+  const taxaLabel=func.vh50>0?'50%':(func.vh25>0?'25%':'50%');
+  set('finVh50',fmtBRL(fin.taxaExt)+'/h ('+taxaLabel+')');
+  set('finTotExt',fmtBRL(fin.totExt));
   set('finAtrH',toHHMM(atr));
-  set('finTotAtr','- '+fmtBRL(totAtr));
+  set('finTotAtr','- '+fmtBRL(fin.totAtr));
   const liqEl=document.getElementById('finLiq');
-  if(liqEl){ liqEl.textContent=fmtBRL(liq); liqEl.className='fin-val '+(liq>=func.sal?'b':'r'); }
+  if(liqEl){ liqEl.textContent=fmtBRL(fin.liq); liqEl.className='fin-val '+(fin.liq>=(func.sal||0)?'b':'r'); }
 }
 
 // Preencher dias úteis com jornada padrão
@@ -1464,6 +1492,7 @@ function gerarRel(){
           <div class="rfi"><span class="rfi-l">Contrato</span><span class="rfi-v">${func.contrato}</span></div>
           <div class="rfi"><span class="rfi-l">Salário Base</span><span class="rfi-v">${fmtBRL(func.sal||0)}</span></div>
           <div class="rfi"><span class="rfi-l">Valor H. Normal</span><span class="rfi-v">${fmtBRL(func.vhN||0)}/h</span></div>
+          <div class="rfi"><span class="rfi-l">Valor H. Extra 25%</span><span class="rfi-v">${fmtBRL(func.vh25||0)}/h</span></div>
           <div class="rfi"><span class="rfi-l">Valor H. Extra 50%</span><span class="rfi-v">${fmtBRL(func.vh50||0)}/h</span></div>
         </div>
         <div class="tw" style="margin-top:12px">
