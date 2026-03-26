@@ -317,6 +317,19 @@ select{cursor:pointer}
 .fin-val{font-size:.88rem;font-weight:800;font-family:var(--mono);color:var(--ink)}
 .fin-val.g{color:var(--green)}.fin-val.r{color:var(--red)}.fin-val.b{color:var(--blue)}.fin-val.a{color:var(--amber)}
 
+/* ══ BACKUP ══ */
+.bk-card{background:var(--card);border-radius:var(--r2);padding:22px 24px;margin-bottom:16px;border:1px solid var(--border);box-shadow:var(--sh)}
+.bk-card-info{border-left:4px solid var(--blue)}
+.bk-card-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px}
+.bk-icon{font-size:32px;flex-shrink:0;margin-top:2px}
+.bk-title{font-size:1rem;font-weight:800;color:var(--ink);margin-bottom:4px}
+.bk-desc{font-size:.82rem;color:var(--ink3);line-height:1.5}
+.bk-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.bk-info{font-size:.75rem;color:var(--ink4);display:flex;gap:18px;flex-wrap:wrap;padding:8px 12px;background:var(--paper);border-radius:6px}
+.bk-gdnote{font-size:.78rem;color:var(--ink3);background:var(--blue-xl);border-radius:8px;padding:10px 14px;margin-top:10px;line-height:1.6}
+.bk-gdnote code{background:var(--blue-l);color:var(--blue);padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:.75rem}
+.bk-checklist{display:flex;flex-direction:column;gap:7px}
+.bk-check{font-size:.85rem;color:var(--ink2);line-height:1.4}
 /* ══ MODALS ══ */
 .overlay{
   position:fixed;inset:0;background:rgba(13,27,42,.55);
@@ -450,6 +463,10 @@ select{cursor:pointer}
       <a href="#" class="nav-a" data-page="relatorios" onclick="nav('relatorios',this)">
         <span class="nav-ic">📄</span><span class="nav-lbl">Relatórios</span>
       </a>
+      <div class="sb-section">Sistema</div>
+      <a href="#" class="nav-a" data-page="backup" onclick="nav('backup',this)">
+        <span class="nav-ic">💾</span><span class="nav-lbl">Backup / Restore</span>
+      </a>
     </nav>
     <div class="sb-foot">
       <div class="sb-user">
@@ -581,7 +598,7 @@ select{cursor:pointer}
             <div class="fin-item"><span class="fin-lbl">Salário Base</span><span class="fin-val b" id="finSal">R$ 0,00</span></div>
             <div class="fin-item"><span class="fin-lbl">Valor Hora Normal</span><span class="fin-val" id="finVhN">R$ 0,00</span></div>
             <div class="fin-item"><span class="fin-lbl">Horas Extras (qtd)</span><span class="fin-val g" id="finExtH">0h00</span></div>
-            <div class="fin-item"><span class="fin-lbl">Valor H. Extra 50%</span><span class="fin-val g" id="finVh50">R$ 0,00/h</span></div>
+            <div class="fin-item"><span class="fin-lbl">Valor H. Extra 25%</span><span class="fin-val g" id="finVh50">R$ 0,00/h</span></div>
             <div class="fin-item"><span class="fin-lbl">Valor Total Extras</span><span class="fin-val g" id="finTotExt">R$ 0,00</span></div>
             <div class="fin-item"><span class="fin-lbl">Atrasos (qtd)</span><span class="fin-val r" id="finAtrH">0h00</span></div>
             <div class="fin-item"><span class="fin-lbl">Desconto Atrasos</span><span class="fin-val r" id="finTotAtr">R$ 0,00</span></div>
@@ -594,7 +611,7 @@ select{cursor:pointer}
               <tr>
                 <th>Data/Dia</th><th>Situação</th>
                 <th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th>
-                <th>Trabalhado</th><th>Extra</th><th>Vl.Extra</th><th>Atraso</th><th>Desc.Atr.</th><th>⚙</th>
+                <th>Trabalhado</th><th>Extra</th><th>Vl.Ext.25%</th><th>Atraso</th><th>Desc.Atr.</th><th>⚙</th>
               </tr>
             </thead>
             <tbody id="ptTbody"></tbody>
@@ -627,6 +644,70 @@ select{cursor:pointer}
           </div>
         </div>
         <div id="relOutput"></div>
+      </div>
+
+      <!-- ══════ BACKUP ══════ -->
+      <div class="page" id="pg-backup">
+        <div class="ph"><h2>💾 Backup &amp; Restore</h2></div>
+
+        <!-- LOCAL JSON -->
+        <div class="bk-card">
+          <div class="bk-card-head">
+            <div class="bk-icon">📁</div>
+            <div>
+              <div class="bk-title">Backup Local (JSON)</div>
+              <div class="bk-desc">Exporta todos os dados do sistema em um arquivo JSON que você salva no computador ou onde quiser.</div>
+            </div>
+          </div>
+          <div class="bk-actions">
+            <button class="btn btn-primary" onclick="exportJSON()">⬇ Exportar Backup JSON</button>
+            <label class="btn btn-ghost" style="cursor:pointer">
+              ⬆ Importar Backup
+              <input type="file" id="importFile" accept=".json" onchange="importJSON(this)" style="display:none"/>
+            </label>
+          </div>
+          <div class="bk-info">
+            <span id="bkLastExport">Último export: nunca</span>
+            <span id="bkDataSize"></span>
+          </div>
+        </div>
+
+        <!-- GOOGLE DRIVE -->
+        <div class="bk-card">
+          <div class="bk-card-head">
+            <div class="bk-icon">☁️</div>
+            <div>
+              <div class="bk-title">Google Drive</div>
+              <div class="bk-desc">Salve o backup diretamente no seu Google Drive. Clique em "Autorizar" para conectar sua conta Google e depois exporte para a nuvem.</div>
+            </div>
+          </div>
+          <div class="bk-actions">
+            <button class="btn btn-primary" id="btnGdAuth" onclick="gdAuth()">🔑 Autorizar Google Drive</button>
+            <button class="btn btn-ghost" id="btnGdExport" onclick="gdExport()" style="display:none">☁ Salvar no Drive</button>
+            <button class="btn btn-ghost" id="btnGdDisconnect" onclick="gdDisconnect()" style="display:none;color:var(--red)">✕ Desconectar</button>
+          </div>
+          <div id="gdStatus" class="bk-info">Não conectado ao Google Drive.</div>
+          <div class="bk-gdnote">
+            <strong>Como funciona:</strong> ao clicar em "Autorizar", uma janela do Google abre para você fazer login e permitir acesso. Após autorizado, o botão "Salvar no Drive" envia o backup para a pasta raiz do seu Drive como <code>PontoSmart_backup_AAAA-MM-DD.json</code>.
+          </div>
+        </div>
+
+        <!-- INFO -->
+        <div class="bk-card bk-card-info">
+          <div class="bk-card-head">
+            <div class="bk-icon">ℹ️</div>
+            <div>
+              <div class="bk-title">O que é salvo no backup?</div>
+            </div>
+          </div>
+          <div class="bk-checklist">
+            <div class="bk-check">✅ Todas as empresas cadastradas</div>
+            <div class="bk-check">✅ Todos os funcionários e seus dados</div>
+            <div class="bk-check">✅ Todos os registros de ponto</div>
+            <div class="bk-check">✅ Feriados cadastrados</div>
+            <div class="bk-check">⚠️ <strong>Importar substitui todos os dados atuais</strong> — faça um export antes de importar.</div>
+          </div>
+        </div>
       </div>
 
     </div><!-- /content -->
@@ -718,6 +799,30 @@ select{cursor:pointer}
       <div class="fr"><div class="fg full"><label>Descrição *</label><input type="text" id="ferDesc" placeholder="Ex: Natal, Tiradentes..."/></div></div>
     </div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeM('mFer')">Cancelar</button><button class="btn btn-primary" onclick="saveFer()">Salvar</button></div>
+  </div>
+</div>
+
+<!-- Modal Google Drive Setup -->
+<div class="overlay" id="mGdSetup" style="display:none" onclick="if(event.target===this)closeM('mGdSetup')">
+  <div class="modal modal-sm">
+    <div class="mh"><h3>☁️ Configurar Google Drive</h3><button class="close-btn" onclick="closeM('mGdSetup')">✕</button></div>
+    <div class="mc">
+      <p style="font-size:.88rem;color:var(--ink2);line-height:1.7;margin-bottom:14px">
+        Para usar o Google Drive, você precisa de um <strong>OAuth2 Client ID</strong> do Google Cloud Console.
+      </p>
+      <div style="background:var(--blue-xl);border-radius:8px;padding:14px;font-size:.8rem;color:var(--ink2);line-height:1.8">
+        <strong>Passos:</strong><br>
+        1. Acesse <a href="https://console.cloud.google.com" target="_blank" style="color:var(--blue)">console.cloud.google.com</a><br>
+        2. Crie um projeto → APIs &amp; Services → Credentials<br>
+        3. Crie <strong>OAuth 2.0 Client ID</strong> (tipo: Web Application)<br>
+        4. Adicione <code style="background:var(--blue-l);padding:1px 4px;border-radius:3px">http://localhost</code> e o caminho do arquivo como <em>Authorized Origins</em><br>
+        5. Copie o Client ID e cole na variável <code style="background:var(--blue-l);padding:1px 4px;border-radius:3px">GD_CLIENT_ID</code> no código
+      </div>
+      <div style="margin-top:12px;padding:10px;background:var(--green-l);border-radius:8px;font-size:.8rem;color:var(--green)">
+        💡 <strong>Alternativa rápida:</strong> use o botão <em>"Exportar Backup JSON"</em> e salve o arquivo manualmente no seu Google Drive pelo navegador.
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-primary" onclick="closeM('mGdSetup')">Entendi</button></div>
   </div>
 </div>
 
@@ -870,7 +975,7 @@ function startClock(){
 }
 
 // ── NAVIGATION ──
-const pageTitles={dashboard:'Dashboard',empresas:'Empresas',funcionarios:'Funcionários',feriados:'Feriados',ponto:'Registro de Ponto',relatorios:'Relatórios'};
+const pageTitles={dashboard:'Dashboard',empresas:'Empresas',funcionarios:'Funcionários',feriados:'Feriados',ponto:'Registro de Ponto',relatorios:'Relatórios',backup:'Backup & Restore'};
 function nav(page,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-a').forEach(n=>n.classList.remove('active'));
@@ -878,7 +983,7 @@ function nav(page,el){
   if(pg) pg.classList.add('active');
   if(el) el.classList.add('active');
   document.getElementById('tbTitle').textContent=pageTitles[page]||page;
-  const handlers={dashboard:renderDash,empresas:renderEmps,funcionarios:renderFuncs,feriados:renderFers,ponto:initPonto,relatorios:initRel};
+  const handlers={dashboard:renderDash,empresas:renderEmps,funcionarios:renderFuncs,feriados:renderFers,ponto:initPonto,relatorios:initRel,backup:initBackup};
   if(handlers[page]) handlers[page]();
   if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('mobile-open');
   return false;
@@ -1230,14 +1335,10 @@ function fmtBRL(v){return'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3
 function calcFin(func,extMins,atrMins){
   const vh=func.vhN||0;
   const vh25=func.vh25||(vh*1.25)||0;
-  const vh50=func.vh50||(vh*1.5)||0;
-  const vh100=func.vh100||(vh*2)||0;
-  // Usa vh50 como padrão para horas extras (pode ser customizado por empresa)
-  // Se vh25 > 0 e vh50 == 0: usa vh25; senão usa vh50
-  const taxaExt = vh50>0?vh50:(vh25>0?vh25:vh*1.5);
-  const totExt=(extMins/60)*taxaExt;
+  // Sempre usa 25% como taxa de hora extra conforme configuração
+  const totExt=(extMins/60)*vh25;
   const totAtr=(atrMins/60)*vh;
-  return{totExt,totAtr,liq:(func.sal||0)+totExt-totAtr,vh25,vh50,vh100,taxaExt};
+  return{totExt,totAtr,liq:(func.sal||0)+totExt-totAtr,vh25,taxaExt:vh25};
 }
 
 function loadPonto(){
@@ -1345,9 +1446,7 @@ function updatePtSummary(func,ym){
   set('finSal',fmtBRL(func.sal||0));
   set('finVhN',fmtBRL(func.vhN||0)+'/h');
   set('finExtH',toHHMM(ext));
-  // Mostra taxa ativa de hora extra (25%, 50% ou calculada)
-  const taxaLabel=func.vh50>0?'50%':(func.vh25>0?'25%':'50%');
-  set('finVh50',fmtBRL(fin.taxaExt)+'/h ('+taxaLabel+')');
+  set('finVh50',fmtBRL(fin.vh25)+'/h (25%)');
   set('finTotExt',fmtBRL(fin.totExt));
   set('finAtrH',toHHMM(atr));
   set('finTotAtr','- '+fmtBRL(fin.totAtr));
@@ -1435,7 +1534,7 @@ function totaisHTML(d){
     <div class="rt gr"><div class="rt-v">${toHHMM(d.totE)}</div><div class="rt-l">Horas Extras</div></div>
     <div class="rt re"><div class="rt-v">${toHHMM(d.totA)}</div><div class="rt-l">Atrasos/Faltas</div></div>
     <div class="rt ${banco?'gr':'re'}"><div class="rt-v">${toHHMM(d.banco)}</div><div class="rt-l">Banco de Horas</div></div>
-    <div class="rt gr"><div class="rt-v">${fmtBRL(d.fin.totExt)}</div><div class="rt-l">Valor Extras</div></div>
+    <div class="rt gr"><div class="rt-v">${fmtBRL(d.fin.totExt)}</div><div class="rt-l">Valor Extras (25%)</div></div>
     <div class="rt re"><div class="rt-v">- ${fmtBRL(d.fin.totAtr)}</div><div class="rt-l">Desc. Atrasos</div></div>
     <div class="rt am"><div class="rt-v">${fmtBRL(d.fin.liq)}</div><div class="rt-l">Saldo Líquido</div></div>
   </div>`;
@@ -1493,11 +1592,10 @@ function gerarRel(){
           <div class="rfi"><span class="rfi-l">Salário Base</span><span class="rfi-v">${fmtBRL(func.sal||0)}</span></div>
           <div class="rfi"><span class="rfi-l">Valor H. Normal</span><span class="rfi-v">${fmtBRL(func.vhN||0)}/h</span></div>
           <div class="rfi"><span class="rfi-l">Valor H. Extra 25%</span><span class="rfi-v">${fmtBRL(func.vh25||0)}/h</span></div>
-          <div class="rfi"><span class="rfi-l">Valor H. Extra 50%</span><span class="rfi-v">${fmtBRL(func.vh50||0)}/h</span></div>
         </div>
         <div class="tw" style="margin-top:12px">
           <table class="dt pt-compact">
-            <thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th><th>Total</th><th>H.Extra</th><th>Vl.Extra</th><th>Atraso</th><th>Desc.Atr</th></tr></thead>
+            <thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th><th>Total</th><th>H.Extra</th><th>Vl.Ext.25%</th><th>Atraso</th><th>Desc.Atr</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
@@ -1542,7 +1640,7 @@ function gerarRel(){
           <thead><tr>
             <th>Funcionário</th><th>Cargo</th><th>Dept.</th>
             <th>H.Previstas</th><th>H.Trabalhadas</th>
-            <th>H.Extras</th><th>Vl.Extras</th>
+            <th>H.Extras</th><th>Vl.Ext.25%</th>
             <th>Atrasos</th><th>Desc.Atrasos</th>
             <th>Banco</th><th>Saldo Líq.</th>
           </tr></thead>
@@ -1626,6 +1724,194 @@ function gerarRel(){
     out.appendChild(card);
   }
   toast('Relatório gerado com sucesso!');
+}
+
+// ════════════════════════════════════════
+// BACKUP & RESTORE
+// ════════════════════════════════════════
+
+function initBackup(){
+  const last=localStorage.getItem('ps_lastExport');
+  document.getElementById('bkLastExport').textContent='Último export: '+(last||'nunca');
+  // Calcula tamanho aproximado dos dados
+  const keys=[K.emps,K.funcs,K.fers,K.pts];
+  const bytes=keys.reduce((s,k)=>s+(localStorage.getItem(k)||'').length,0);
+  document.getElementById('bkDataSize').textContent='Tamanho: ~'+Math.round(bytes/1024*10)/10+' KB';
+  updateGdUI();
+}
+
+// ── EXPORT JSON ──
+function exportJSON(){
+  const data={
+    version:'1.0',
+    exportedAt:new Date().toISOString(),
+    app:'PontoSmart',
+    data:{
+      empresas:  ls.get(K.emps),
+      funcionarios: ls.get(K.funcs),
+      feriados:  ls.get(K.fers),
+      pontos:    ls.get(K.pts),
+    }
+  };
+  const json=JSON.stringify(data,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const dt=new Date().toISOString().slice(0,10);
+  a.href=url; a.download=`PontoSmart_backup_${dt}.json`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  localStorage.setItem('ps_lastExport',new Date().toLocaleString('pt-BR'));
+  document.getElementById('bkLastExport').textContent='Último export: '+new Date().toLocaleString('pt-BR');
+  toast('Backup exportado com sucesso!');
+}
+
+// ── IMPORT JSON ──
+function importJSON(input){
+  const file=input.files[0];
+  if(!file) return;
+  confirm2('ATENÇÃO: importar substitui TODOS os dados atuais. Continuar?',()=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const obj=JSON.parse(e.target.result);
+        // Suporte a formato direto ou envelope com .data
+        const d=obj.data||obj;
+        if(d.empresas)    ls.set(K.emps,  d.empresas);
+        if(d.funcionarios)ls.set(K.funcs, d.funcionarios);
+        if(d.feriados)    ls.set(K.fers,  d.feriados);
+        if(d.pontos)      ls.set(K.pts,   d.pontos);
+        refreshEmpSel();
+        toast('Backup importado com sucesso! Recarregando...','ok');
+        setTimeout(()=>location.reload(),1200);
+      }catch(err){
+        toast('Arquivo inválido ou corrompido.','err');
+      }
+    };
+    reader.readAsText(file);
+  });
+  input.value=''; // reset input
+}
+
+// ════════════════════════════════════════
+// GOOGLE DRIVE INTEGRATION
+// ════════════════════════════════════════
+// Usa Google Identity Services (GIS) + Drive REST API v3
+// Client ID público para uso local — substitua pelo seu para produção
+
+const GD_CLIENT_ID='';  // Coloque aqui seu Google OAuth2 Client ID
+const GD_SCOPE='https://www.googleapis.com/auth/drive.file';
+let gdToken=null;
+let gdTokenClient=null;
+
+function gdLoadScript(){
+  return new Promise(res=>{
+    if(window.google&&window.google.accounts){ res(); return; }
+    const s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client';
+    s.onload=res;
+    document.head.appendChild(s);
+  });
+}
+
+async function gdAuth(){
+  if(!GD_CLIENT_ID){
+    // Modo demonstração: abre popup explicativo
+    openM('mGdSetup');
+    return;
+  }
+  await gdLoadScript();
+  gdTokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:GD_CLIENT_ID,
+    scope:GD_SCOPE,
+    callback:(resp)=>{
+      if(resp.error){ toast('Erro ao autorizar: '+resp.error,'err'); return; }
+      gdToken=resp.access_token;
+      localStorage.setItem('ps_gdToken',gdToken);
+      updateGdUI();
+      toast('Google Drive autorizado! ✓');
+    }
+  });
+  gdTokenClient.requestAccessToken();
+}
+
+function gdDisconnect(){
+  gdToken=null;
+  localStorage.removeItem('ps_gdToken');
+  if(window.google&&gdToken) google.accounts.oauth2.revoke(gdToken,()=>{});
+  updateGdUI();
+  toast('Desconectado do Google Drive.','warn');
+}
+
+function updateGdUI(){
+  const saved=localStorage.getItem('ps_gdToken');
+  if(saved) gdToken=saved;
+  const connected=!!gdToken;
+  const authBtn=document.getElementById('btnGdAuth');
+  const expBtn=document.getElementById('btnGdExport');
+  const disBtn=document.getElementById('btnGdDisconnect');
+  const status=document.getElementById('gdStatus');
+  if(!authBtn) return;
+  if(connected){
+    authBtn.style.display='none';
+    expBtn.style.display='inline-flex';
+    disBtn.style.display='inline-flex';
+    status.innerHTML='<span style="color:var(--green);font-weight:600">✓ Conectado ao Google Drive</span>';
+  } else {
+    authBtn.style.display='inline-flex';
+    expBtn.style.display='none';
+    disBtn.style.display='none';
+    status.textContent='Não conectado ao Google Drive.';
+  }
+}
+
+async function gdExport(){
+  if(!gdToken){ toast('Autorize o Google Drive primeiro.','err'); return; }
+  const data={version:'1.0',exportedAt:new Date().toISOString(),app:'PontoSmart',
+    data:{empresas:ls.get(K.emps),funcionarios:ls.get(K.funcs),feriados:ls.get(K.fers),pontos:ls.get(K.pts)}};
+  const json=JSON.stringify(data,null,2);
+  const dt=new Date().toISOString().slice(0,10);
+  const fname=`PontoSmart_backup_${dt}.json`;
+  const status=document.getElementById('gdStatus');
+  status.innerHTML='<span style="color:var(--amber)">⏳ Enviando para o Drive...</span>';
+  try{
+    // Multipart upload para criar arquivo no Drive
+    const boundary='pontosmart_boundary';
+    const meta=JSON.stringify({name:fname,mimeType:'application/json'});
+    const body=[
+      '--'+boundary,
+      'Content-Type: application/json; charset=UTF-8',
+      '',meta,'',
+      '--'+boundary,
+      'Content-Type: application/json',
+      '',json,'',
+      '--'+boundary+'--'
+    ].join('
+');
+    const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+gdToken,
+        'Content-Type':'multipart/related; boundary='+boundary,
+      },
+      body
+    });
+    if(resp.ok){
+      const file=await resp.json();
+      localStorage.setItem('ps_lastExport',new Date().toLocaleString('pt-BR'));
+      status.innerHTML=`<span style="color:var(--green);font-weight:600">✓ Salvo no Drive: <em>${fname}</em> (ID: ${file.id})</span>`;
+      toast('Backup salvo no Google Drive! ✓');
+    } else if(resp.status===401){
+      gdToken=null; localStorage.removeItem('ps_gdToken'); updateGdUI();
+      toast('Sessão expirada. Autorize novamente.','err');
+    } else {
+      const err=await resp.json();
+      toast('Erro Drive: '+(err.error?.message||resp.status),'err');
+    }
+  }catch(e){
+    toast('Erro de conexão: '+e.message,'err');
+    status.innerHTML='<span style="color:var(--red)">Erro ao conectar com o Drive.</span>';
+  }
 }
 
 // ════════════════════════════════════════
