@@ -1886,8 +1886,7 @@ async function gdExport(){
       'Content-Type: application/json',
       '',json,'',
       '--'+boundary+'--'
-    ].join('
-');
+    ].join('\r\n');
     const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
       method:'POST',
       headers:{
