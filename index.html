@@ -307,7 +307,9 @@ select{cursor:pointer}
 .td-val-ext{font-family:var(--mono);font-weight:700;color:var(--green);font-size:.74rem}
 .td-val-atr{font-family:var(--mono);font-weight:700;color:var(--red);font-size:.74rem}
 .we-row td{background:#fafbfd!important;color:var(--ink4)}
+.sun-row td{background:#f8f4ff!important;color:#9333ea}
 .hol-row td{background:var(--blue-xl)!important}
+.sat-row td{background:#f0fdf4!important}
 /* Painel financeiro */
 .fin-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;box-shadow:var(--sh)}
 .fin-bar h4{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);margin-bottom:7px;display:flex;align-items:center;gap:6px}
@@ -765,9 +767,17 @@ select{cursor:pointer}
       </div>
       <div class="fsec">🕐 Jornada de Trabalho</div>
       <div class="fr">
-        <div class="fg"><label>Entrada Padrão</label><input type="time" id="fEnt" value="08:00"/></div>
-        <div class="fg"><label>Saída Padrão</label><input type="time" id="fSai" value="17:00"/></div>
+        <div class="fg"><label>Entrada Seg–Sex</label><input type="time" id="fEnt" value="08:00"/></div>
+        <div class="fg"><label>Saída Seg–Sex</label><input type="time" id="fSai" value="17:00"/></div>
         <div class="fg"><label>Almoço (min)</label><input type="number" id="fAlm" value="60" min="0" max="180"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Entrada Sábado</label><input type="time" id="fEntSab" value=""/></div>
+        <div class="fg"><label>Saída Sábado</label><input type="time" id="fSaiSab" value=""/></div>
+        <div class="fg"><label>Almoço Sáb. (min)</label><input type="number" id="fAlmSab" value="0" min="0" max="180"/></div>
+      </div>
+      <div style="font-size:.72rem;color:var(--ink4);margin-top:-8px;margin-bottom:8px;padding:0 2px">
+        ℹ️ Deixar Entrada/Saída Sábado em branco = sábado não é dia útil (horas trabalhadas no sábado serão extras)
       </div>
       <div class="fsec">💰 Valores</div>
       <div class="fr">
@@ -869,7 +879,23 @@ const toMins = s => { if(!s||!s.includes(':')) return null; const [h,m]=s.split(
 const toHHMM = m => { if(m===null||isNaN(m)) return '--:--'; const s=m<0?'-':'',a=Math.abs(Math.round(m)); return `${s}${Math.floor(a/60)}h${String(a%60).padStart(2,'0')}`; };
 const fmtD   = d => { if(!d) return ''; const [y,mo,dd]=d.split('-'); return `${dd}/${mo}/${y}`; };
 const wday   = d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][new Date(d+'T12:00:00').getDay()];
+const isSun  = d => new Date(d+'T12:00:00').getDay()===0;
+const isSat  = d => new Date(d+'T12:00:00').getDay()===6;
 const isWE   = d => { const w=new Date(d+'T12:00:00').getDay(); return w===0||w===6; };
+// Verifica se um dia é "não útil" para um funcionário específico
+// Sábado é útil se o func tiver entSab+saiSab configurado
+function isDayOff(data, func){
+  if(isSun(data)) return true;  // Domingo sempre folga/extra
+  if(isSat(data)) return !(func && func.entSab && func.saiSab); // Sáb = folga se sem horário
+  return false;
+}
+// Jornada de um sábado em minutos (retorna 0 se não configurado)
+function jornadaSabMins(f){
+  if(!f.entSab||!f.saiSab) return 0;
+  const e=toMins(f.entSab), s=toMins(f.saiSab);
+  if(e===null||s===null) return 0;
+  return Math.max(0,(s-e)-(f.almSab||0));
+}
 const isHol  = d => ls.get(K.fers).some(f=>f.data===d);
 const getHol = d => ls.get(K.fers).find(f=>f.data===d);
 
@@ -890,30 +916,51 @@ function jornadaMins(f){
   return (s-e)-(f.alm||60);
 }
 
-function calcDia(reg, f){
+function calcDia(reg, f, data){
   const sits=['Falta','Suspensão','Outros'];
   if(sits.includes(reg.sit)){
-    const prev=jornadaMins(f);
-    return {trab:0,extra:0,atr:prev,prev};
+    // Em dia útil normal, ausência = desconto da jornada
+    const isOff=data?isDayOff(data,f):false;
+    const prev=isOff?0:jornadaMins(f);
+    return {trab:0,extra:0,atr:prev,prev,isExtra:false};
   }
   if(['Atestado','Feriado','Folga'].includes(reg.sit))
-    return {trab:0,extra:0,atr:0,prev:0};
+    return {trab:0,extra:0,atr:0,prev:0,isExtra:false};
 
   const e=toMins(reg.ent), sa=toMins(reg.saAlm), va=toMins(reg.vaAlm), s=toMins(reg.sai);
-  if(e===null||s===null) return {trab:0,extra:0,atr:0,prev:jornadaMins(f)};
+
+  // Determina se é dia de hora extra compulsória (domingo, feriado trabalhado, sáb sem jornada)
+  const isSunDay   = data?isSun(data):false;
+  const isHolDay   = data?isHol(data):false;
+  const isSatNoSch = data?(isSat(data)&&(!f.entSab||!f.saiSab)):false;
+  const allExtra   = isSunDay || isHolDay || isSatNoSch;
+
+  if(e===null||s===null){
+    const prev2=allExtra?0:(isSat(data||'')&&f.entSab&&f.saiSab?jornadaSabMins(f):jornadaMins(f));
+    return {trab:0,extra:0,atr:0,prev:prev2,isExtra:allExtra};
+  }
 
   let trab=s-e;
+  // Almoço: usa o cadastrado no sábado se for sábado com jornada, senão padrão
+  const almBase=(data&&isSat(data)&&f.entSab&&f.saiSab)?(f.almSab||0):(f.alm||60);
   if(sa!==null&&va!==null&&va>sa) trab-=(va-sa);
-  else trab-=(f.alm||60);
+  else trab-=almBase;
   trab=Math.max(0,trab);
 
-  const prev=jornadaMins(f);
+  // Se domingo, feriado trabalhado ou sábado sem escala: TUDO é hora extra
+  if(allExtra){
+    return {trab,extra:trab,atr:0,prev:0,isExtra:true};
+  }
+
+  // Sábado com jornada cadastrada: usa jornada do sábado
+  const isSatWorking=data&&isSat(data)&&f.entSab&&f.saiSab;
+  const prev=isSatWorking?jornadaSabMins(f):jornadaMins(f);
   const extra=Math.max(0,trab-prev);
-  // atraso = deficit + entrada atrasada
-  const entPrev=toMins(f.ent)||480;
-  const atrEnt=Math.max(0,e-entPrev);
+  // Atraso: entrada atrasada + déficit de horas
+  const entPrevRef=toMins(isSatWorking?f.entSab:f.ent)||toMins('08:00');
+  const atrEnt=Math.max(0,e-entPrevRef);
   const atrDef=Math.max(0,prev-trab);
-  return {trab,extra,atr:Math.max(atrDef,atrEnt),prev};
+  return {trab,extra,atr:Math.max(atrDef,atrEnt),prev,isExtra:false};
 }
 
 function getPt(funcId,data){
@@ -1142,6 +1189,9 @@ function openFuncModal(id=null){
   document.getElementById('fEnt').value='08:00';
   document.getElementById('fSai').value='17:00';
   document.getElementById('fAlm').value='60';
+  document.getElementById('fEntSab').value='';
+  document.getElementById('fSaiSab').value='';
+  document.getElementById('fAlmSab').value='0';
   document.getElementById('fAdm').value=today();
   document.getElementById('fContrato').value='CLT';
   document.getElementById('mFuncTitle').textContent='Novo Funcionário';
@@ -1171,6 +1221,9 @@ function openFuncModal(id=null){
     document.getElementById('fEnt').value=f.ent||'08:00';
     document.getElementById('fSai').value=f.sai||'17:00';
     document.getElementById('fAlm').value=f.alm||60;
+    document.getElementById('fEntSab').value=f.entSab||'';
+    document.getElementById('fSaiSab').value=f.saiSab||'';
+    document.getElementById('fAlmSab').value=f.almSab||0;
     empSel.value=f.empId||'';
     document.getElementById('mFuncTitle').textContent='Editar Funcionário';
   }
@@ -1189,7 +1242,7 @@ function saveFunc(){
   if(!empId) return toast('Selecione a empresa do funcionário.','err');
   const funcs=ls.get(K.funcs);
   const id=document.getElementById('fId').value;
-  const obj={id:id||uid(),empId,nome,cpf,cargo,dept,adm:document.getElementById('fAdm').value,contrato:document.getElementById('fContrato').value,sal:parseFloat(document.getElementById('fSal').value)||0,vhN:parseFloat(document.getElementById('fVhN').value)||0,vh25:parseFloat(document.getElementById('fVh25').value)||0,vh50:parseFloat(document.getElementById('fVh50').value)||0,vh100:parseFloat(document.getElementById('fVh100').value)||0,ent:document.getElementById('fEnt').value,sai:document.getElementById('fSai').value,alm:parseInt(document.getElementById('fAlm').value)||60};
+  const obj={id:id||uid(),empId,nome,cpf,cargo,dept,adm:document.getElementById('fAdm').value,contrato:document.getElementById('fContrato').value,sal:parseFloat(document.getElementById('fSal').value)||0,vhN:parseFloat(document.getElementById('fVhN').value)||0,vh25:parseFloat(document.getElementById('fVh25').value)||0,vh50:parseFloat(document.getElementById('fVh50').value)||0,vh100:parseFloat(document.getElementById('fVh100').value)||0,ent:document.getElementById('fEnt').value,sai:document.getElementById('fSai').value,alm:parseInt(document.getElementById('fAlm').value)||60,entSab:document.getElementById('fEntSab').value,saiSab:document.getElementById('fSaiSab').value,almSab:parseInt(document.getElementById('fAlmSab').value)||0};
   if(id){ const i=funcs.findIndex(f=>f.id===id); funcs[i]=obj; toast('Funcionário atualizado!'); }
   else { funcs.push(obj); toast('Funcionário cadastrado!'); }
   ls.set(K.funcs,funcs);
@@ -1228,7 +1281,7 @@ function renderFuncs(){
       <td><span class="chip">${f.dept}</span></td>
       <td style="font-size:.8rem;color:var(--blue);font-weight:600">${empMap[f.empId]||'–'}</td>
       <td>${fmtD(f.adm)}</td>
-      <td class="mono" style="font-size:.78rem">${f.ent||'–'} – ${f.sai||'–'}</td>
+      <td class="mono" style="font-size:.78rem">${f.ent||'–'} – ${f.sai||'–'}${f.entSab&&f.saiSab?'<br><span style="color:var(--teal);font-size:.68rem">Sáb: '+f.entSab+'–'+f.saiSab+'</span>':''}</td>
       <td><span class="sit sit-normal" style="font-size:.7rem">${f.contrato}</span></td>
       <td><div class="tda">
         <button class="btn-icon edit" onclick="openFuncModal('${f.id}')">✏️</button>
@@ -1357,14 +1410,22 @@ function loadPonto(){
   tbody.innerHTML='';
   dias.forEach(data=>{
     const we=isWE(data), hol=isHol(data);
+    const sun=isSun(data), sat=isSat(data);
+    const satWorking=sat&&func.entSab&&func.saiSab;
     const reg=getOrCreatePt(funcId,data);
+    // Auto-sit: feriado
     if(hol&&reg.sit==='Normal'){ setPtField(reg.id,'sit','Feriado'); reg.sit='Feriado'; }
-    const calc=calcDia(reg,func);
+    // Auto-sit: domingo sem registro = folga
+    if(sun&&reg.sit==='Normal'){ setPtField(reg.id,'sit','Folga'); reg.sit='Folga'; }
+    // Auto-sit: sábado sem jornada e sem registro = folga
+    if(sat&&!satWorking&&reg.sit==='Normal'){ setPtField(reg.id,'sit','Folga'); reg.sit='Folga'; }
+    const calc=calcDia(reg,func,data);
     const fin=calcFin(func,calc.extra>0?calc.extra:0,calc.atr>0?calc.atr:0);
-    const rowCls=we?'we-row':hol?'hol-row':'';
+    // Row style: domingo/feriado/sáb-sem-jornada = cinza; sáb com jornada = normal com badge
+    const rowCls=sun?'we-row sun-row':(!satWorking&&sat)?'we-row':hol?'hol-row':satWorking?'sat-row':'';
     const sits=['Normal','Falta','Atestado','Feriado','Folga','Suspensão','Outros'];
     const tr=document.createElement('tr');
-    tr.id=`pr-${reg.id}`; tr.className=rowCls;
+    tr.id=`pr-${reg.id}`; tr.className=rowCls; tr.dataset.date=data;
     tr.innerHTML=`
       <td style="white-space:nowrap">
         <span style="font-weight:700;font-size:.8rem">${fmtD(data)}</span>
@@ -1409,7 +1470,9 @@ function refreshRow(regId,funcId){
   const reg=ls.get(K.pts).find(p=>p.id===regId);
   const func=ls.get(K.funcs).find(f=>f.id===funcId);
   if(!reg||!func) return;
-  const c=calcDia(reg,func);
+  const rowEl=document.getElementById(`pr-${regId}`);
+  const dateCtx=rowEl?rowEl.dataset.date:null;
+  const c=calcDia(reg,func,dateCtx);
   const fin=calcFin(func,c.extra>0?c.extra:0,c.atr>0?c.atr:0);
   const set=(id,v)=>{ const el=document.getElementById(id); if(el)el.textContent=v; };
   set(`tc-t-${regId}`, c.trab>0?toHHMM(c.trab):'–');
@@ -1435,7 +1498,7 @@ function clearRow(regId,funcId){
 function updatePtSummary(func,ym){
   const recs=ls.get(K.pts).filter(p=>p.funcId===func.id&&p.data.startsWith(ym));
   let trab=0,ext=0,atr=0,prev=0;
-  daysOfMonth(ym).forEach(d=>{ if(!isWE(d)&&!isHol(d)) prev+=jornadaMins(func); });
+  daysOfMonth(ym).forEach(d=>{ if(!isSun(d)&&!isHol(d)){ if(isSat(d)){if(func.entSab&&func.saiSab)prev+=jornadaSabMins(func);}else prev+=jornadaMins(func); } });
   recs.forEach(r=>{ const c=calcDia(r,func); trab+=c.trab; if(c.extra>0)ext+=c.extra; if(c.atr>0)atr+=c.atr; });
   const set=(id,v)=>{ const el=document.getElementById(id); if(el)el.textContent=v; };
   set('ptTrab',toHHMM(trab)); set('ptPrev',toHHMM(prev));
@@ -1501,8 +1564,9 @@ function calcFuncMes(func,ym){
   dias.forEach(data=>{
     const we=isWE(data),hol=isHol(data);
     const reg=ls.get(K.pts).find(p=>p.funcId===func.id&&p.data===data)||{sit:we?'Folga':hol?'Feriado':'Normal',ent:'',saAlm:'',vaAlm:'',sai:''};
-    const c=calcDia(reg,func);
-    if(!we&&!hol) totP+=jornadaMins(func);
+    const c=calcDia(reg,func,data);
+    // Previsto: dias úteis normais + sábados com jornada configurada
+    if(!isSun(data)&&!isHol(data)){ if(isSat(data)){if(func.entSab&&func.saiSab)totP+=jornadaSabMins(func);}else totP+=jornadaMins(func); }
     totT+=c.trab; if(c.extra>0)totE+=c.extra; if(c.atr>0)totA+=c.atr;
     rows.push({data,we,hol,reg,c});
   });
@@ -1587,7 +1651,8 @@ function gerarRel(){
           <div class="rfi"><span class="rfi-l">Cargo</span><span class="rfi-v">${func.cargo}</span></div>
           <div class="rfi"><span class="rfi-l">Departamento</span><span class="rfi-v">${func.dept}</span></div>
           <div class="rfi"><span class="rfi-l">Admissão</span><span class="rfi-v">${fmtD(func.adm)}</span></div>
-          <div class="rfi"><span class="rfi-l">Jornada</span><span class="rfi-v mono">${func.ent||'–'} – ${func.sai||'–'}</span></div>
+          <div class="rfi"><span class="rfi-l">Jornada Seg–Sex</span><span class="rfi-v mono">${func.ent||'–'} – ${func.sai||'–'}</span></div>
+          ${func.entSab&&func.saiSab?'<div class="rfi"><span class="rfi-l">Jornada Sábado</span><span class="rfi-v mono">'+func.entSab+' – '+func.saiSab+(func.almSab?" (alm:"+func.almSab+"min)":"")+'</span></div>':''}
           <div class="rfi"><span class="rfi-l">Contrato</span><span class="rfi-v">${func.contrato}</span></div>
           <div class="rfi"><span class="rfi-l">Salário Base</span><span class="rfi-v">${fmtBRL(func.sal||0)}</span></div>
           <div class="rfi"><span class="rfi-l">Valor H. Normal</span><span class="rfi-v">${fmtBRL(func.vhN||0)}/h</span></div>
