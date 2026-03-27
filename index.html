@@ -776,8 +776,9 @@ select{cursor:pointer}
         <div class="fg"><label>Saída Sábado</label><input type="time" id="fSaiSab" value=""/></div>
         <div class="fg"><label>Almoço Sáb. (min)</label><input type="number" id="fAlmSab" value="0" min="0" max="180"/></div>
       </div>
-      <div style="font-size:.72rem;color:var(--ink4);margin-top:-8px;margin-bottom:8px;padding:0 2px">
-        ℹ️ Deixar Entrada/Saída Sábado em branco = sábado não é dia útil (horas trabalhadas no sábado serão extras)
+      <div style="font-size:.72rem;color:var(--ink4);margin-top:-8px;margin-bottom:8px;padding:0 2px;line-height:1.5">
+        ℹ️ Horas trabalhadas no sábado <strong>após 12:00</strong> são sempre contabilizadas como hora extra.<br>
+        Deixar Entrada/Saída Sábado em branco = sábado sem jornada (todas as horas trabalhadas = extra).
       </div>
       <div class="fsec">💰 Valores</div>
       <div class="fr">
@@ -889,12 +890,21 @@ function isDayOff(data, func){
   if(isSat(data)) return !(func && func.entSab && func.saiSab); // Sáb = folga se sem horário
   return false;
 }
-// Jornada de um sábado em minutos (retorna 0 se não configurado)
+// Jornada normal do sábado: limitada até 12:00 (após = hora extra)
+const SAB_LIMITE = 12 * 60; // 12:00 em minutos
 function jornadaSabMins(f){
   if(!f.entSab||!f.saiSab) return 0;
   const e=toMins(f.entSab), s=toMins(f.saiSab);
   if(e===null||s===null) return 0;
-  return Math.max(0,(s-e)-(f.almSab||0));
+  // Jornada normal = do início até 12:00 (ou saída se antes das 12:00), menos almoço
+  const sEfetivo=Math.min(s, SAB_LIMITE);
+  return Math.max(0,(sEfetivo-e)-(f.almSab||0));
+}
+// Minutos extras de sábado após 12:00 com jornada cadastrada
+function extraSabApos12(reg){
+  const s=toMins(reg.sai);
+  if(s===null||s<=SAB_LIMITE) return 0;
+  return s-SAB_LIMITE;
 }
 const isHol  = d => ls.get(K.fers).some(f=>f.data===d);
 const getHol = d => ls.get(K.fers).find(f=>f.data===d);
@@ -952,12 +962,31 @@ function calcDia(reg, f, data){
     return {trab,extra:trab,atr:0,prev:0,isExtra:true};
   }
 
-  // Sábado com jornada cadastrada: usa jornada do sábado
+  // Sábado com jornada cadastrada:
+  // — horas até 12:00 = normais (usa jornadaSabMins que já limita a 12:00)
+  // — horas após 12:00 = hora extra automática
   const isSatWorking=data&&isSat(data)&&f.entSab&&f.saiSab;
-  const prev=isSatWorking?jornadaSabMins(f):jornadaMins(f);
+
+  if(isSatWorking){
+    const prevSab=jornadaSabMins(f);          // jornada normal limitada a 12:00
+    const extApos12=extraSabApos12(reg);      // minutos após 12:00
+    // Horas trabalhadas até 12:00 (descontando almoço)
+    const sLim=Math.min(s,SAB_LIMITE);
+    let trabNormal=sLim-e;
+    if(sa!==null&&va!==null&&va>sa) trabNormal-=Math.min(va-sa,trabNormal);
+    else trabNormal-=(f.almSab||0);
+    trabNormal=Math.max(0,trabNormal);
+    const extraTotal=Math.max(0,trabNormal-prevSab)+extApos12;
+    const entPrevSab=toMins(f.entSab)||toMins('08:00');
+    const atrEntSab=Math.max(0,e-entPrevSab);
+    const atrDefSab=Math.max(0,prevSab-trabNormal);
+    return {trab,extra:extraTotal,atr:Math.max(atrDefSab,atrEntSab),prev:prevSab,isExtra:false};
+  }
+
+  // Seg–Sex normal
+  const prev=jornadaMins(f);
   const extra=Math.max(0,trab-prev);
-  // Atraso: entrada atrasada + déficit de horas
-  const entPrevRef=toMins(isSatWorking?f.entSab:f.ent)||toMins('08:00');
+  const entPrevRef=toMins(f.ent)||toMins('08:00');
   const atrEnt=Math.max(0,e-entPrevRef);
   const atrDef=Math.max(0,prev-trab);
   return {trab,extra,atr:Math.max(atrDef,atrEnt),prev,isExtra:false};
