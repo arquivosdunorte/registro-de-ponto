@@ -298,8 +298,9 @@ select{cursor:pointer}
 .psi.vio .psi-val{color:var(--violet)}
 .pt-compact th{padding:6px 7px!important;font-size:.61rem!important}
 .pt-compact td{padding:3px 6px!important;font-size:.78rem!important;border-bottom:1px solid var(--border)}
-.ti{width:76px;padding:3px 4px;font-family:var(--mono);font-size:.72rem;text-align:center;border:1.5px solid var(--border);border-radius:5px;background:var(--paper);transition:all var(--trans)}
+.ti{width:72px;padding:3px 4px;font-family:var(--mono);font-size:.78rem;text-align:center;border:1.5px solid var(--border);border-radius:5px;background:var(--paper);transition:all var(--trans);letter-spacing:.5px}
 .ti:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 2px rgba(26,86,219,.1)}
+.ti::placeholder{color:var(--ink4);letter-spacing:0;font-size:.68rem}
 .ss{padding:3px 5px;font-size:.7rem;min-width:95px;border-radius:5px}
 .td-trab{font-family:var(--mono);font-weight:700;color:var(--ink);font-size:.76rem}
 .td-ext{font-family:var(--mono);font-weight:700;color:var(--green);font-size:.76rem}
@@ -929,7 +930,6 @@ function jornadaMins(f){
 function calcDia(reg, f, data){
   const sits=['Falta','Suspensão','Outros'];
   if(sits.includes(reg.sit)){
-    // Em dia útil normal, ausência = desconto da jornada
     const isOff=data?isDayOff(data,f):false;
     const prev=isOff?0:jornadaMins(f);
     return {trab:0,extra:0,atr:prev,prev,isExtra:false};
@@ -938,52 +938,50 @@ function calcDia(reg, f, data){
     return {trab:0,extra:0,atr:0,prev:0,isExtra:false};
 
   const e=toMins(reg.ent), sa=toMins(reg.saAlm), va=toMins(reg.vaAlm), s=toMins(reg.sai);
+  const isSunDay = data?isSun(data):false;
+  const isHolDay = data?isHol(data):false;
+  const isSatDay = data?isSat(data):false;
 
-  // Determina se é dia de hora extra compulsória (domingo, feriado trabalhado, sáb sem jornada)
-  const isSunDay   = data?isSun(data):false;
-  const isHolDay   = data?isHol(data):false;
-  const isSatNoSch = data?(isSat(data)&&(!f.entSab||!f.saiSab)):false;
-  const allExtra   = isSunDay || isHolDay || isSatNoSch;
-
-  if(e===null||s===null){
-    const prev2=allExtra?0:(isSat(data||'')&&f.entSab&&f.saiSab?jornadaSabMins(f):jornadaMins(f));
-    return {trab:0,extra:0,atr:0,prev:prev2,isExtra:allExtra};
-  }
-
-  let trab=s-e;
-  // Almoço: usa o cadastrado no sábado se for sábado com jornada, senão padrão
-  const almBase=(data&&isSat(data)&&f.entSab&&f.saiSab)?(f.almSab||0):(f.alm||60);
-  if(sa!==null&&va!==null&&va>sa) trab-=(va-sa);
-  else trab-=almBase;
-  trab=Math.max(0,trab);
-
-  // Se domingo, feriado trabalhado ou sábado sem escala: TUDO é hora extra
-  if(allExtra){
+  // ── Domingo ou Feriado trabalhado: tudo é hora extra ──
+  if(isSunDay || isHolDay){
+    if(e===null||s===null) return {trab:0,extra:0,atr:0,prev:0,isExtra:true};
+    let trab=s-e;
+    if(sa!==null&&va!==null&&va>sa) trab-=(va-sa); else trab-=(f.alm||60);
+    trab=Math.max(0,trab);
     return {trab,extra:trab,atr:0,prev:0,isExtra:true};
   }
 
-  // Sábado com jornada cadastrada:
-  // — horas até 12:00 = normais (usa jornadaSabMins que já limita a 12:00)
-  // — horas após 12:00 = hora extra automática
-  const isSatWorking=data&&isSat(data)&&f.entSab&&f.saiSab;
-
-  if(isSatWorking){
-    const prevSab=jornadaSabMins(f);          // jornada normal limitada a 12:00
-    const extApos12=extraSabApos12(reg);      // minutos após 12:00
-    // Horas trabalhadas até 12:00 (descontando almoço)
+  // ── Sábado: horas até 12:00 = normais; após 12:00 = hora extra ──
+  // Regra válida com ou sem jornada de sábado cadastrada.
+  if(isSatDay){
+    if(e===null||s===null){
+      const prevSab2=jornadaSabMins(f);
+      return {trab:0,extra:0,atr:0,prev:prevSab2,isExtra:false};
+    }
+    const almSab=f.almSab||0;
+    // Parte normal: da entrada até 12:00 (descontando almoço se dentro desse período)
     const sLim=Math.min(s,SAB_LIMITE);
-    let trabNormal=sLim-e;
+    let trabNormal=Math.max(0,sLim-e);
     if(sa!==null&&va!==null&&va>sa) trabNormal-=Math.min(va-sa,trabNormal);
-    else trabNormal-=(f.almSab||0);
+    else trabNormal-=almSab;
     trabNormal=Math.max(0,trabNormal);
-    const extraTotal=Math.max(0,trabNormal-prevSab)+extApos12;
-    const entPrevSab=toMins(f.entSab)||toMins('08:00');
-    const atrEntSab=Math.max(0,e-entPrevSab);
-    const atrDefSab=Math.max(0,prevSab-trabNormal);
-    return {trab,extra:extraTotal,atr:Math.max(atrDefSab,atrEntSab),prev:prevSab,isExtra:false};
+    // Parte extra: tudo que passar das 12:00
+    const extApos12=Math.max(0,s-SAB_LIMITE);
+    const totalTrab=trabNormal+extApos12;
+    // Jornada prevista: usa cadastro do sábado (limitado a 12:00) ou 0 se não cadastrado
+    const prevSab=jornadaSabMins(f);
+    // Atraso só conta se tiver jornada de sábado cadastrada
+    const atrSab=prevSab>0?Math.max(0,prevSab-trabNormal):0;
+    const entPrevSab=f.entSab?toMins(f.entSab):null;
+    const atrEntSab=(entPrevSab!==null&&prevSab>0)?Math.max(0,e-entPrevSab):0;
+    return {trab:totalTrab,extra:extApos12,atr:Math.max(atrSab,atrEntSab),prev:prevSab,isExtra:false};
   }
 
-  // Seg–Sex normal
+  // ── Seg–Sex normal ──
+  if(e===null||s===null) return {trab:0,extra:0,atr:0,prev:jornadaMins(f),isExtra:false};
+  let trab=s-e;
+  if(sa!==null&&va!==null&&va>sa) trab-=(va-sa); else trab-=(f.alm||60);
+  trab=Math.max(0,trab);
   const prev=jornadaMins(f);
   const extra=Math.max(0,trab-prev);
   const entPrevRef=toMins(f.ent)||toMins('08:00');
@@ -1461,10 +1459,10 @@ function loadPonto(){
         <span style="font-size:.65rem;color:var(--ink4);margin-left:3px">${wday(data)}</span>
       </td>
       <td><select class="ss" onchange="onSitChange('${reg.id}','${funcId}','${data}',this.value)">${sits.map(s=>`<option value="${s}"${reg.sit===s?' selected':''}>${s}</option>`).join('')}</select></td>
-      <td><input type="time" class="ti" id="ti-${reg.id}-ent"   value="${reg.ent||''}"   onchange="onTimeChange('${reg.id}','${funcId}','ent',this.value)"/></td>
-      <td><input type="time" class="ti" id="ti-${reg.id}-saAlm" value="${reg.saAlm||''}" onchange="onTimeChange('${reg.id}','${funcId}','saAlm',this.value)"/></td>
-      <td><input type="time" class="ti" id="ti-${reg.id}-vaAlm" value="${reg.vaAlm||''}" onchange="onTimeChange('${reg.id}','${funcId}','vaAlm',this.value)"/></td>
-      <td><input type="time" class="ti" id="ti-${reg.id}-sai"   value="${reg.sai||''}"   onchange="onTimeChange('${reg.id}','${funcId}','sai',this.value)"/></td>
+      <td><input type="text" class="ti" id="ti-${reg.id}-ent"   value="${reg.ent||''}"   placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','ent',this)"/></td>
+      <td><input type="text" class="ti" id="ti-${reg.id}-saAlm" value="${reg.saAlm||''}" placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','saAlm',this)"/></td>
+      <td><input type="text" class="ti" id="ti-${reg.id}-vaAlm" value="${reg.vaAlm||''}" placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','vaAlm',this)"/></td>
+      <td><input type="text" class="ti" id="ti-${reg.id}-sai"   value="${reg.sai||''}"   placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','sai',this)"/></td>
       <td class="td-trab" id="tc-t-${reg.id}">${calc.trab>0?toHHMM(calc.trab):'–'}</td>
       <td class="td-ext"  id="tc-e-${reg.id}">${calc.extra>0?toHHMM(calc.extra):'–'}</td>
       <td class="td-val-ext" id="tc-ve-${reg.id}">${calc.extra>0?fmtBRL(fin.totExt):'–'}</td>
@@ -1476,12 +1474,26 @@ function loadPonto(){
   updatePtSummary(func,ym);
 }
 
-function onTimeChange(regId,funcId,field,val){
-  setPtField(regId,field,val);
-  refreshRow(regId,funcId);
-  const ym=document.getElementById('ptMes').value;
-  const f=ls.get(K.funcs).find(x=>x.id===funcId);
-  if(f) updatePtSummary(f,ym);
+// Máscara automática HH:MM e validação ao digitar
+function onTimeInput(regId,funcId,field,el){
+  let v=el.value.replace(/[^0-9]/g,'');
+  // Insere ":" automaticamente após os 2 primeiros dígitos
+  if(v.length>2) v=v.slice(0,2)+':'+v.slice(2,4);
+  el.value=v;
+  // Só salva e recalcula quando o valor estiver completo e válido (HH:MM)
+  if(/^([01]\d|2[0-3]):[0-5]\d$/.test(v)){
+    el.style.borderColor='var(--border)';
+    setPtField(regId,field,v);
+    refreshRow(regId,funcId);
+    const ym=document.getElementById('ptMes').value;
+    const f=ls.get(K.funcs).find(x=>x.id===funcId);
+    if(f) updatePtSummary(f,ym);
+  } else if(v.length===5){
+    // Formato completo mas inválido — destaca em vermelho
+    el.style.borderColor='var(--red)';
+  } else {
+    el.style.borderColor='var(--border)';
+  }
 }
 
 function onSitChange(regId,funcId,data,val){
