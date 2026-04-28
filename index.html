@@ -891,21 +891,15 @@ function isDayOff(data, func){
   if(isSat(data)) return !(func && func.entSab && func.saiSab); // Sáb = folga se sem horário
   return false;
 }
-// Jornada normal do sábado: limitada até 12:00 (após = hora extra)
+// Jornada normal do sábado: limitada até 12:00, SEM desconto de almoço
 const SAB_LIMITE = 12 * 60; // 12:00 em minutos
 function jornadaSabMins(f){
   if(!f.entSab||!f.saiSab) return 0;
   const e=toMins(f.entSab), s=toMins(f.saiSab);
   if(e===null||s===null) return 0;
-  // Jornada normal = do início até 12:00 (ou saída se antes das 12:00), menos almoço
+  // Sábado: só entrada e saída, sem almoço, limitado a 12:00
   const sEfetivo=Math.min(s, SAB_LIMITE);
-  return Math.max(0,(sEfetivo-e)-(f.almSab||0));
-}
-// Minutos extras de sábado após 12:00 com jornada cadastrada
-function extraSabApos12(reg){
-  const s=toMins(reg.sai);
-  if(s===null||s<=SAB_LIMITE) return 0;
-  return s-SAB_LIMITE;
+  return Math.max(0, sEfetivo-e);
 }
 const isHol  = d => ls.get(K.fers).some(f=>f.data===d);
 const getHol = d => ls.get(K.fers).find(f=>f.data===d);
@@ -942,35 +936,27 @@ function calcDia(reg, f, data){
   const isHolDay = data?isHol(data):false;
   const isSatDay = data?isSat(data):false;
 
-  // ── Domingo ou Feriado trabalhado: tudo é hora extra ──
+  // ── Domingo ou Feriado trabalhado: tudo extra, SEM desconto de almoço ──
   if(isSunDay || isHolDay){
     if(e===null||s===null) return {trab:0,extra:0,atr:0,prev:0,isExtra:true};
-    let trab=s-e;
-    if(sa!==null&&va!==null&&va>sa) trab-=(va-sa); else trab-=(f.alm||60);
-    trab=Math.max(0,trab);
+    const trab=Math.max(0,s-e);
     return {trab,extra:trab,atr:0,prev:0,isExtra:true};
   }
 
-  // ── Sábado: horas até 12:00 = normais; após 12:00 = hora extra ──
-  // Regra válida com ou sem jornada de sábado cadastrada.
+  // ── Sábado: SEM almoço; até 12:00 = normal; após 12:00 = hora extra ──
   if(isSatDay){
     if(e===null||s===null){
-      const prevSab2=jornadaSabMins(f);
-      return {trab:0,extra:0,atr:0,prev:prevSab2,isExtra:false};
+      return {trab:0,extra:0,atr:0,prev:jornadaSabMins(f),isExtra:false};
     }
-    const almSab=f.almSab||0;
-    // Parte normal: da entrada até 12:00 (descontando almoço se dentro desse período)
+    // Parte normal: entrada até 12:00, SEM desconto de almoço
     const sLim=Math.min(s,SAB_LIMITE);
-    let trabNormal=Math.max(0,sLim-e);
-    if(sa!==null&&va!==null&&va>sa) trabNormal-=Math.min(va-sa,trabNormal);
-    else trabNormal-=almSab;
-    trabNormal=Math.max(0,trabNormal);
-    // Parte extra: tudo que passar das 12:00
+    const trabNormal=Math.max(0,sLim-e);
+    // Parte extra: minutos após 12:00
     const extApos12=Math.max(0,s-SAB_LIMITE);
     const totalTrab=trabNormal+extApos12;
-    // Jornada prevista: usa cadastro do sábado (limitado a 12:00) ou 0 se não cadastrado
+    // Jornada prevista (limitada a 12:00, sem almoço)
     const prevSab=jornadaSabMins(f);
-    // Atraso só conta se tiver jornada de sábado cadastrada
+    // Atraso: só se tiver jornada cadastrada
     const atrSab=prevSab>0?Math.max(0,prevSab-trabNormal):0;
     const entPrevSab=f.entSab?toMins(f.entSab):null;
     const atrEntSab=(entPrevSab!==null&&prevSab>0)?Math.max(0,e-entPrevSab):0;
