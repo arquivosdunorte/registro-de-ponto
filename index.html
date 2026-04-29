@@ -954,13 +954,9 @@ function calcDia(reg, f, data){
     // Parte extra: minutos após 12:00
     const extApos12=Math.max(0,s-SAB_LIMITE);
     const totalTrab=trabNormal+extApos12;
-    // Jornada prevista (limitada a 12:00, sem almoço)
+    // Jornada prevista (limitada a 12:00, sem almoço) — sábado NÃO tem atraso
     const prevSab=jornadaSabMins(f);
-    // Atraso: só se tiver jornada cadastrada
-    const atrSab=prevSab>0?Math.max(0,prevSab-trabNormal):0;
-    const entPrevSab=f.entSab?toMins(f.entSab):null;
-    const atrEntSab=(entPrevSab!==null&&prevSab>0)?Math.max(0,e-entPrevSab):0;
-    return {trab:totalTrab,extra:extApos12,atr:Math.max(atrSab,atrEntSab),prev:prevSab,isExtra:false};
+    return {trab:totalTrab,extra:extApos12,atr:0,prev:prevSab,isExtra:false};
   }
 
   // ── Seg–Sex normal ──
