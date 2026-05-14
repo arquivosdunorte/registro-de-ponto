@@ -919,6 +919,10 @@ function jornadaMins(f){
 }
 
 function calcDia(reg, f, data){
+  // Regra geral: trab = saída - entrada (- almoço se Seg-Sex).
+  // saldo = trab - previsto → se positivo = extra; se negativo = atraso.
+  // Um único valor por dia: OU extra OU atraso, nunca os dois.
+
   const e   = toMins(reg.ent);
   const sa  = toMins(reg.saAlm);
   const va  = toMins(reg.vaAlm);
@@ -927,52 +931,56 @@ function calcDia(reg, f, data){
   const isHolDay = data ? isHol(data) : false;
   const isSatDay = data ? isSat(data) : false;
 
-  // ── SÁBADO: sem almoço; jornada prevista 07:00–12:00 (5h); extra após 12:00; atraso se sair antes de 12:00 ──
+  // ── SÁBADO ──
+  // Previsto: 07:00–12:00 = 5h. Sem almoço.
+  // Saída - Entrada = total trabalhado.
+  // Saldo até 12:00 vs previsto → atraso OU extra.
+  // Minutos após 12:00 → sempre extra (adicional).
   if(isSatDay){
-    const prev=jornadaSabMins(); // 300 min (5h)
-    if(e===null && s===null) return {trab:0,extra:0,atr:0,prev,isExtra:false};
-    // Só entrada sem saída: atraso da jornada inteira
-    if(e!==null && s===null) return {trab:0,extra:0,atr:prev,prev,isExtra:false};
-    // Entrada e saída lançadas
-    if(e!==null && s!==null){
-      const sLim    = Math.min(s, SAB_LIMITE);
-      const trabNorm= Math.max(0, sLim - e);
-      const extApos = Math.max(0, s - SAB_LIMITE);
-      const totalTrab = trabNorm + extApos;
-      // Atraso: jornada prevista menos o que trabalhou até 12:00 (não conta extra)
-      const atr = Math.max(0, prev - trabNorm);
-      return {trab:totalTrab, extra:extApos, atr, prev, isExtra:false};
-    }
-    return {trab:0, extra:0, atr:0, prev, isExtra:false};
+    const prev = jornadaSabMins(); // 300 min
+    if(e===null && s===null) return {trab:0, extra:0, atr:0, prev, isExtra:false};
+    if(e!==null && s===null) return {trab:0, extra:0, atr:prev, prev, isExtra:false};
+    const sLim     = Math.min(s, SAB_LIMITE);
+    const trabNorm = Math.max(0, sLim - e);       // horas trabalhadas até 12:00
+    const extApos  = Math.max(0, s - SAB_LIMITE); // horas após 12:00 → SEMPRE extra
+    const totalTrab= trabNorm + extApos;
+    // Regra: extra e atraso são mutuamente exclusivos no dia.
+    // Saldo do dia = totalTrab - prev (horas após 12:00 sempre contam como extra).
+    // Se saldo > 0 → extra; se saldo < 0 → atraso; nunca os dois.
+    const saldo = totalTrab - prev;
+    const extra = saldo > 0 ? saldo : 0;
+    const atr   = saldo < 0 ? Math.abs(saldo) : 0;
+    return {trab:totalTrab, extra, atr, prev, isExtra:false};
   }
 
-  // ── DOMINGO ou FERIADO trabalhado: tudo é hora extra, sem almoço ──
+  // ── DOMINGO ou FERIADO trabalhado: tudo é hora extra ──
   if(isSunDay || isHolDay){
-    if(e!==null && s!==null) return {trab:Math.max(0,s-e),extra:Math.max(0,s-e),atr:0,prev:0,isExtra:true};
-    return {trab:0,extra:0,atr:0,prev:0,isExtra:true};
+    if(e!==null && s!==null){
+      const trab = Math.max(0, s - e);
+      return {trab, extra:trab, atr:0, prev:0, isExtra:true};
+    }
+    return {trab:0, extra:0, atr:0, prev:0, isExtra:true};
   }
 
-  // ── SITUAÇÕES ESPECIAIS (Falta, Suspensão, Outros, Atestado, Feriado, Folga) ──
+  // ── SITUAÇÕES ESPECIAIS ──
   if(['Falta','Suspensão','Outros'].includes(reg.sit))
-    return {trab:0,extra:0,atr:jornadaMins(f),prev:jornadaMins(f),isExtra:false};
+    return {trab:0, extra:0, atr:jornadaMins(f), prev:jornadaMins(f), isExtra:false};
   if(['Atestado','Feriado','Folga'].includes(reg.sit))
-    return {trab:0,extra:0,atr:0,prev:0,isExtra:false};
+    return {trab:0, extra:0, atr:0, prev:0, isExtra:false};
 
   // ── SEG–SEX NORMAL ──
-  // Nenhum horário: dia não registrado, sem atraso
-  if(e===null && s===null) return {trab:0,extra:0,atr:0,prev:jornadaMins(f),isExtra:false};
-  // Só entrada (sem saída): dia incompleto → atraso da jornada inteira
-  if(e!==null && s===null) return {trab:0,extra:0,atr:jornadaMins(f),prev:jornadaMins(f),isExtra:false};
-  // Dia completo
+  const prev = jornadaMins(f);
+  if(e===null && s===null) return {trab:0, extra:0, atr:0, prev, isExtra:false};
+  if(e!==null && s===null) return {trab:0, extra:0, atr:prev, prev, isExtra:false};
+  // Total trabalhado = saída - entrada - almoço
   let trab = s - e;
-  if(sa!==null && va!==null && va>sa) trab -= (va-sa); else trab -= (f.alm||60);
+  if(sa!==null && va!==null && va>sa) trab -= (va - sa); else trab -= (f.alm||60);
   trab = Math.max(0, trab);
-  const prev     = jornadaMins(f);
-  const extra    = Math.max(0, trab - prev);
-  const entRef   = toMins(f.ent) || 480; // 08:00 padrão
-  const atrEnt   = Math.max(0, e - entRef);
-  const atrDef   = Math.max(0, prev - trab);
-  return {trab, extra, atr:Math.max(atrDef, atrEnt), prev, isExtra:false};
+  // Saldo único: OU extra OU atraso
+  const saldo = trab - prev;
+  const extra = saldo > 0 ? saldo : 0;
+  const atr   = saldo < 0 ? Math.abs(saldo) : 0;
+  return {trab, extra, atr, prev, isExtra:false};
 }
 
 function getPt(funcId,data){
