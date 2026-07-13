@@ -305,6 +305,13 @@ select{cursor:pointer}
 .td-trab{font-family:var(--mono);font-weight:700;color:var(--ink);font-size:.76rem}
 .td-ext{font-family:var(--mono);font-weight:700;color:var(--green);font-size:.76rem}
 .td-atr{font-family:var(--mono);font-weight:700;color:var(--red);font-size:.76rem}
+.td-val-atr{font-family:var(--mono);font-weight:700;color:var(--red);font-size:.74rem}
+/* Textos de falta/atraso sempre em vermelho */
+.atr-red{color:var(--red)!important;font-weight:700!important}
+.pt-compact thead th{border-bottom:1px solid var(--border)}
+.ti-manha{border-color:#bae6fd}
+.ti-tarde{border-color:#fde68a}
+.ti-extra{border-color:#fbcfe8}
 .td-val-ext{font-family:var(--mono);font-weight:700;color:var(--green);font-size:.74rem}
 .td-val-atr{font-family:var(--mono);font-weight:700;color:var(--red);font-size:.74rem}
 .we-row td{background:#fafbfd!important;color:var(--ink4)}
@@ -591,7 +598,7 @@ select{cursor:pointer}
           <div class="psi b"><span class="psi-lbl">Trabalhado</span><span class="psi-val" id="ptTrab">0h00</span></div>
           <div class="psi b"><span class="psi-lbl">Previsto</span><span class="psi-val" id="ptPrev">0h00</span></div>
           <div class="psi g"><span class="psi-lbl">H. Extras</span><span class="psi-val" id="ptExt">0h00</span></div>
-          <div class="psi r"><span class="psi-lbl">Atrasos</span><span class="psi-val" id="ptAtr">0h00</span></div>
+          <div class="psi r"><span class="psi-lbl" style="color:var(--red)">Atrasos</span><span class="psi-val" style="color:var(--red)" id="ptAtr">0h00</span></div>
           <div class="psi a"><span class="psi-lbl">Banco</span><span class="psi-val" id="ptBanco">0h00</span></div>
         </div>
         <!-- Painel financeiro -->
@@ -612,9 +619,25 @@ select{cursor:pointer}
           <table class="dt pt-compact" id="ptTable">
             <thead>
               <tr>
-                <th>Data/Dia</th><th>Situação</th>
-                <th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th>
-                <th>Trabalhado</th><th>Extra</th><th>Vl.Ext.25%</th><th>Atraso</th><th>Desc.Atr.</th><th>⚙</th>
+                <th rowspan="2" style="vertical-align:middle">Data/Dia</th>
+                <th rowspan="2" style="vertical-align:middle">Situação</th>
+                <th colspan="2" style="text-align:center;background:#e0f2fe;color:#0369a1">☀️ Manhã</th>
+                <th colspan="2" style="text-align:center;background:#fef9c3;color:#854d0e">🌤 Tarde</th>
+                <th colspan="2" style="text-align:center;background:#fce7f3;color:#9d174d">⭐ Extra</th>
+                <th rowspan="2" style="vertical-align:middle">Trabalhado</th>
+                <th rowspan="2" style="vertical-align:middle">H.Extra</th>
+                <th rowspan="2" style="vertical-align:middle">Vl.25%</th>
+                <th rowspan="2" style="vertical-align:middle;color:var(--red)">Atraso</th>
+                <th rowspan="2" style="vertical-align:middle;color:var(--red)">Desc.</th>
+                <th rowspan="2" style="vertical-align:middle">⚙</th>
+              </tr>
+              <tr>
+                <th style="background:#e0f2fe;color:#0369a1">Entrada</th>
+                <th style="background:#e0f2fe;color:#0369a1">Saída</th>
+                <th style="background:#fef9c3;color:#854d0e">Entrada</th>
+                <th style="background:#fef9c3;color:#854d0e">Saída</th>
+                <th style="background:#fce7f3;color:#9d174d">Entrada</th>
+                <th style="background:#fce7f3;color:#9d174d">Saída</th>
               </tr>
             </thead>
             <tbody id="ptTbody"></tbody>
@@ -923,10 +946,17 @@ function calcDia(reg, f, data){
   // saldo = trab - previsto → se positivo = extra; se negativo = atraso.
   // Um único valor por dia: OU extra OU atraso, nunca os dois.
 
-  const e   = toMins(reg.ent);
-  const sa  = toMins(reg.saAlm);
-  const va  = toMins(reg.vaAlm);
-  const s   = toMins(reg.sai);
+  // Campos: manhã (mEnt/mSai), tarde (tEnt/tSai), extra (extEnt/extSai)
+  // Suporte legado: se ainda tiver ent/sai (registros antigos), usa-os como manhã
+  const mE = toMins(reg.mEnt  || reg.ent    || '');
+  const mS = toMins(reg.mSai  || reg.saAlm  || '');
+  const tE = toMins(reg.tEnt  || reg.vaAlm  || '');
+  const tS = toMins(reg.tSai  || reg.sai    || '');
+  const xE = toMins(reg.extEnt || '');
+  const xS = toMins(reg.extSai || '');
+  // Para compatibilidade com lógica de entrada/saída principal
+  const e = mE; // entrada manhã
+  const s = tS !== null ? tS : mS; // saída final = tarde ou manhã
   const isSunDay = data ? isSun(data) : false;
   const isHolDay = data ? isHol(data) : false;
   const isSatDay = data ? isSat(data) : false;
@@ -938,12 +968,20 @@ function calcDia(reg, f, data){
   // Minutos após 12:00 → sempre extra (adicional).
   if(isSatDay){
     const prev = jornadaSabMins(); // 300 min
-    if(e===null && s===null) return {trab:0, extra:0, atr:0, prev, isExtra:false};
-    if(e!==null && s===null) return {trab:0, extra:0, atr:prev, prev, isExtra:false};
-    const sLim     = Math.min(s, SAB_LIMITE);
-    const trabNorm = Math.max(0, sLim - e);       // horas trabalhadas até 12:00
-    const extApos  = Math.max(0, s - SAB_LIMITE); // horas após 12:00 → SEMPRE extra
-    const totalTrab= trabNorm + extApos;
+    // sem nenhum lançamento = falta
+    if(mE===null && mS===null && tE===null && tS===null && xE===null && xS===null)
+      return {trab:0, extra:0, atr:prev, prev, isExtra:false};
+    // só entrada, sem saída = falta
+    if(mE!==null && mS===null && tS===null) return {trab:0, extra:0, atr:prev, prev, isExtra:false};
+    // Sábado: manhã (mEnt→mSai), extra após 12:00 vai para extEnt/extSai ou além de mSai
+    const entSab = mE; // entrada manhã
+    const saiSab = tS !== null ? tS : (mS !== null ? mS : null); // saída final
+    const sLim     = saiSab !== null ? Math.min(saiSab, SAB_LIMITE) : (entSab !== null ? SAB_LIMITE : null);
+    const trabNorm = (entSab!==null && sLim!==null) ? Math.max(0, sLim - entSab) : 0;
+    const extApos  = saiSab !== null ? Math.max(0, saiSab - SAB_LIMITE) : 0;
+    // Extra também do período extra explícito
+    const extExpl  = (xE!==null && xS!==null && xS>xE) ? xS-xE : 0;
+    const totalTrab= trabNorm + extApos + extExpl;
     // Regra: extra e atraso são mutuamente exclusivos no dia.
     // Saldo do dia = totalTrab - prev (horas após 12:00 sempre contam como extra).
     // Se saldo > 0 → extra; se saldo < 0 → atraso; nunca os dois.
@@ -955,11 +993,11 @@ function calcDia(reg, f, data){
 
   // ── DOMINGO ou FERIADO trabalhado: tudo é hora extra ──
   if(isSunDay || isHolDay){
-    if(e!==null && s!==null){
-      const trab = Math.max(0, s - e);
-      return {trab, extra:trab, atr:0, prev:0, isExtra:true};
-    }
-    return {trab:0, extra:0, atr:0, prev:0, isExtra:true};
+    let trabExtra=0;
+    if(mE!==null&&mS!==null&&mS>mE) trabExtra+=mS-mE;
+    if(tE!==null&&tS!==null&&tS>tE) trabExtra+=tS-tE;
+    if(xE!==null&&xS!==null&&xS>xE) trabExtra+=xS-xE;
+    return {trab:trabExtra, extra:trabExtra, atr:0, prev:0, isExtra:true};
   }
 
   // ── SITUAÇÕES ESPECIAIS ──
@@ -970,13 +1008,18 @@ function calcDia(reg, f, data){
 
   // ── SEG–SEX NORMAL ──
   const prev = jornadaMins(f);
-  if(e===null && s===null) return {trab:0, extra:0, atr:0, prev, isExtra:false};
-  if(e!==null && s===null) return {trab:0, extra:0, atr:prev, prev, isExtra:false};
-  // Total trabalhado = saída - entrada - almoço
-  let trab = s - e;
-  if(sa!==null && va!==null && va>sa) trab -= (va - sa); else trab -= (f.alm||60);
+  // Sem nenhum lançamento
+  if(mE===null && mS===null && tE===null && tS===null && xE===null && xS===null)
+    return {trab:0, extra:0, atr:0, prev, isExtra:false};
+  // Calcula cada período
+  let trab = 0;
+  if(mE!==null && mS!==null && mS>mE) trab += mS - mE; // manhã
+  if(tE!==null && tS!==null && tS>tE) trab += tS - tE; // tarde
+  if(xE!==null && xS!==null && xS>xE) trab += xS - xE; // extra
+  // Se só tem manhã sem tarde = dia incompleto → atraso
+  if(mE!==null && mS!==null && tE===null && tS===null && xE===null && xS===null)
+    return {trab, extra:0, atr:Math.max(0,prev-trab), prev, isExtra:false};
   trab = Math.max(0, trab);
-  // Saldo único: OU extra OU atraso
   const saldo = trab - prev;
   const extra = saldo > 0 ? saldo : 0;
   const atr   = saldo < 0 ? Math.abs(saldo) : 0;
@@ -992,7 +1035,7 @@ function getOrCreatePt(funcId,data){
   const all=ls.get(K.pts);
   let p=all.find(x=>x.funcId===funcId&&x.data===data);
   if(!p){
-    p={id:uid(),funcId,empId:localStorage.getItem(K.aEmp)||'',data,sit:'Normal',ent:'',saAlm:'',vaAlm:'',sai:''};
+    p={id:uid(),funcId,empId:localStorage.getItem(K.aEmp)||'',data,sit:'Normal',mEnt:'',mSai:'',tEnt:'',tSai:'',extEnt:'',extSai:''};
     all.push(p);
     ls.set(K.pts,all);
   }
@@ -1436,9 +1479,9 @@ function loadPonto(){
     // Auto-sit: feriado
     if(hol&&reg.sit==='Normal'){ setPtField(reg.id,'sit','Feriado'); reg.sit='Feriado'; }
     // Auto-sit: domingo sem horários = folga
-    if(sun&&reg.sit==='Normal'&&!reg.ent&&!reg.sai){ setPtField(reg.id,'sit','Folga'); reg.sit='Folga'; }
-    // Sábado: corrige registros antigos que foram marcados como Folga automaticamente
-    if(sat&&reg.sit==='Folga'&&(reg.ent||reg.sai)){ setPtField(reg.id,'sit','Normal'); reg.sit='Normal'; }
+    if(sun&&reg.sit==='Normal'&&!reg.mEnt&&!reg.tSai&&!reg.ent&&!reg.sai){ setPtField(reg.id,'sit','Folga'); reg.sit='Folga'; }
+    // Sábado: corrige registros antigos Folga com horários lançados
+    if(sat&&reg.sit==='Folga'&&(reg.mEnt||reg.tSai||reg.ent||reg.sai)){ setPtField(reg.id,'sit','Normal'); reg.sit='Normal'; }
     // Sábado sem horários: situação Normal (sem marcar como folga)
     const calc=calcDia(reg,func,data);
     const fin=calcFin(func,calc.extra>0?calc.extra:0,calc.atr>0?calc.atr:0);
@@ -1447,21 +1490,24 @@ function loadPonto(){
     const sits=['Normal','Falta','Atestado','Feriado','Folga','Suspensão','Outros'];
     const tr=document.createElement('tr');
     tr.id=`pr-${reg.id}`; tr.className=rowCls; tr.dataset.date=data;
+    const hasAtr=calc.atr>0;
     tr.innerHTML=`
       <td style="white-space:nowrap">
         <span style="font-weight:700;font-size:.8rem">${fmtD(data)}</span>
         <span style="font-size:.65rem;color:var(--ink4);margin-left:3px">${wday(data)}</span>
       </td>
       <td><select class="ss" onchange="onSitChange('${reg.id}','${funcId}','${data}',this.value)">${sits.map(s=>`<option value="${s}"${reg.sit===s?' selected':''}>${s}</option>`).join('')}</select></td>
-      <td><input type="text" class="ti" id="ti-${reg.id}-ent"   value="${reg.ent||''}"   placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','ent',this)" onblur="onTimeBlur('${reg.id}','${funcId}','ent',this)"/></td>
-      <td><input type="text" class="ti" id="ti-${reg.id}-saAlm" value="${reg.saAlm||''}" placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','saAlm',this)" onblur="onTimeBlur('${reg.id}','${funcId}','saAlm',this)"/></td>
-      <td><input type="text" class="ti" id="ti-${reg.id}-vaAlm" value="${reg.vaAlm||''}" placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','vaAlm',this)" onblur="onTimeBlur('${reg.id}','${funcId}','vaAlm',this)"/></td>
-      <td><input type="text" class="ti" id="ti-${reg.id}-sai"   value="${reg.sai||''}"   placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','sai',this)" onblur="onTimeBlur('${reg.id}','${funcId}','sai',this)"/></td>
+      <td style="background:#f0f9ff"><input type="text" class="ti ti-manha" id="ti-${reg.id}-mEnt"   value="${reg.mEnt||reg.ent||''}"   placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','mEnt',this)" onblur="onTimeBlur('${reg.id}','${funcId}','mEnt',this)"/></td>
+      <td style="background:#f0f9ff"><input type="text" class="ti ti-manha" id="ti-${reg.id}-mSai"   value="${reg.mSai||reg.saAlm||''}" placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','mSai',this)" onblur="onTimeBlur('${reg.id}','${funcId}','mSai',this)"/></td>
+      <td style="background:#fefce8"><input type="text" class="ti ti-tarde" id="ti-${reg.id}-tEnt"   value="${reg.tEnt||reg.vaAlm||''}" placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','tEnt',this)" onblur="onTimeBlur('${reg.id}','${funcId}','tEnt',this)"/></td>
+      <td style="background:#fefce8"><input type="text" class="ti ti-tarde" id="ti-${reg.id}-tSai"   value="${reg.tSai||reg.sai||''}"   placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','tSai',this)" onblur="onTimeBlur('${reg.id}','${funcId}','tSai',this)"/></td>
+      <td style="background:#fdf2f8"><input type="text" class="ti ti-extra" id="ti-${reg.id}-extEnt" value="${reg.extEnt||''}"           placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','extEnt',this)" onblur="onTimeBlur('${reg.id}','${funcId}','extEnt',this)"/></td>
+      <td style="background:#fdf2f8"><input type="text" class="ti ti-extra" id="ti-${reg.id}-extSai" value="${reg.extSai||''}"           placeholder="HH:MM" maxlength="5" oninput="onTimeInput('${reg.id}','${funcId}','extSai',this)" onblur="onTimeBlur('${reg.id}','${funcId}','extSai',this)"/></td>
       <td class="td-trab" id="tc-t-${reg.id}">${calc.trab>0?toHHMM(calc.trab):'–'}</td>
       <td class="td-ext"  id="tc-e-${reg.id}">${calc.extra>0?toHHMM(calc.extra):'–'}</td>
       <td class="td-val-ext" id="tc-ve-${reg.id}">${calc.extra>0?fmtBRL(fin.totExt):'–'}</td>
-      <td class="td-atr"  id="tc-a-${reg.id}">${calc.atr>0?toHHMM(calc.atr):'–'}</td>
-      <td class="td-val-atr" id="tc-va-${reg.id}">${calc.atr>0?fmtBRL(fin.totAtr):'–'}</td>
+      <td class="td-atr"  id="tc-a-${reg.id}" style="${hasAtr?'color:var(--red);font-weight:700':''}">${hasAtr?toHHMM(calc.atr):'–'}</td>
+      <td class="td-val-atr" id="tc-va-${reg.id}" style="${hasAtr?'color:var(--red);font-weight:700':''}">${hasAtr?fmtBRL(fin.totAtr):'–'}</td>
       <td><button class="btn-icon del" onclick="clearRow('${reg.id}','${funcId}')" title="Limpar dia" style="font-size:12px">🗑</button></td>`;
     tbody.appendChild(tr);
   });
@@ -1551,17 +1597,17 @@ function refreshRow(regId,funcId){
   // Usa reg.data diretamente — não depende do DOM (dataset pode falhar após re-render)
   const c=calcDia(reg,func,reg.data);
   const fin=calcFin(func,c.extra>0?c.extra:0,c.atr>0?c.atr:0);
-  const set=(id,v)=>{ const el=document.getElementById(id); if(el)el.textContent=v; };
-  set(`tc-t-${regId}`, c.trab>0?toHHMM(c.trab):'–');
-  set(`tc-e-${regId}`, c.extra>0?toHHMM(c.extra):'–');
-  set(`tc-ve-${regId}`,c.extra>0?fmtBRL(fin.totExt):'–');
-  set(`tc-a-${regId}`, c.atr>0?toHHMM(c.atr):'–');
-  set(`tc-va-${regId}`,c.atr>0?fmtBRL(fin.totAtr):'–');
+  const set=(id,v,red)=>{ const el=document.getElementById(id); if(el){ el.textContent=v; if(red!==undefined){ el.style.color=red?'var(--red)':''; el.style.fontWeight=red?'700':''; } } };
+  set(`tc-t-${regId}`,  c.trab>0?toHHMM(c.trab):'–');
+  set(`tc-e-${regId}`,  c.extra>0?toHHMM(c.extra):'–');
+  set(`tc-ve-${regId}`, c.extra>0?fmtBRL(fin.totExt):'–');
+  set(`tc-a-${regId}`,  c.atr>0?toHHMM(c.atr):'–', c.atr>0);
+  set(`tc-va-${regId}`, c.atr>0?fmtBRL(fin.totAtr):'–', c.atr>0);
 }
 
 function clearRow(regId,funcId){
   confirm2('Limpar todos os horários deste dia?',()=>{
-    ['ent','saAlm','vaAlm','sai'].forEach(field=>{
+    ['mEnt','mSai','tEnt','tSai','extEnt','extSai'].forEach(field=>{
       setPtField(regId,field,'');
       const el=document.getElementById(`ti-${regId}-${field}`);
       if(el){ el.value=''; el.style.borderColor='var(--border)'; }
@@ -1607,14 +1653,18 @@ function preencherJornada(){
     daysOfMonth(ym).forEach(data=>{
       if(!isWE(data)&&!isHol(data)){
         const reg=getOrCreatePt(funcId,data);
-        if(reg.sit==='Normal'&&!reg.ent){
-          setPtField(reg.id,'ent',func.ent||'08:00');
-          setPtField(reg.id,'sai',func.sai||'17:00');
-          // Almoço padrão: saída 12:00, volta 13:00
+        if(reg.sit==='Normal'&&!reg.mEnt&&!reg.ent){
+          // Manhã: entrada e saída do padrão do funcionário (manhã)
+          const [hEnt,mEnt]=(func.ent||'08:00').split(':').map(Number);
+          const [hAlm]=((func.alm||60)>=60?['12','00']:['12','00']);
+          setPtField(reg.id,'mEnt', func.ent||'08:00');
+          setPtField(reg.id,'mSai','12:00');
+          // Tarde: volta do almoço até saída final
           const almMins=func.alm||60;
-          setPtField(reg.id,'saAlm','12:00');
           const voltaH=12+Math.floor(almMins/60), voltaM=almMins%60;
-          setPtField(reg.id,'vaAlm',`${String(voltaH).padStart(2,'0')}:${String(voltaM).padStart(2,'0')}`);
+          const voltaStr=`${String(voltaH).padStart(2,'0')}:${String(voltaM).padStart(2,'0')}`;
+          setPtField(reg.id,'tEnt', voltaStr);
+          setPtField(reg.id,'tSai', func.sai||'17:00');
         }
       }
     });
@@ -1642,7 +1692,7 @@ function calcFuncMes(func,ym){
   const rows=[];
   dias.forEach(data=>{
     const we=isWE(data),hol=isHol(data);
-    const reg=ls.get(K.pts).find(p=>p.funcId===func.id&&p.data===data)||{sit:we?'Folga':hol?'Feriado':'Normal',ent:'',saAlm:'',vaAlm:'',sai:''};
+    const reg=ls.get(K.pts).find(p=>p.funcId===func.id&&p.data===data)||{sit:we?'Folga':hol?'Feriado':'Normal',mEnt:'',mSai:'',tEnt:'',tSai:'',extEnt:'',extSai:''};
     const c=calcDia(reg,func,data);
     // Previsto: dias úteis normais + sábados com jornada configurada
     // Previsto = apenas Seg–Sex. Sábado não conta no previsto.
@@ -1712,13 +1762,14 @@ function gerarRel(){
         return`<tr ${rStyle}>
           <td>${fmtD(data)}</td><td>${wday(data)}</td>
           <td><span class="sit sit-${sitKey}">${reg.sit||'Normal'}</span></td>
-          <td class="mono">${reg.ent||'–'}</td><td class="mono">${reg.saAlm||'–'}</td>
-          <td class="mono">${reg.vaAlm||'–'}</td><td class="mono">${reg.sai||'–'}</td>
+          <td class="mono">${reg.mEnt||reg.ent||'–'}</td><td class="mono">${reg.mSai||reg.saAlm||'–'}</td>
+          <td class="mono">${reg.tEnt||reg.vaAlm||'–'}</td><td class="mono">${reg.tSai||reg.sai||'–'}</td>
+          <td class="mono">${reg.extEnt||'–'}</td><td class="mono">${reg.extSai||'–'}</td>
           <td class="td-trab">${c.trab>0?toHHMM(c.trab):'–'}</td>
           <td class="td-ext">${c.extra>0?toHHMM(c.extra):'–'}</td>
           <td class="td-val-ext">${c.extra>0?fmtBRL(fin2.totExt):'–'}</td>
-          <td class="td-atr">${c.atr>0?toHHMM(c.atr):'–'}</td>
-          <td class="td-val-atr">${c.atr>0?fmtBRL(fin2.totAtr):'–'}</td>
+          <td style="${c.atr>0?'color:var(--red);font-weight:700':''}">${c.atr>0?toHHMM(c.atr):'–'}</td>
+          <td style="${c.atr>0?'color:var(--red);font-weight:700':''}">${c.atr>0?fmtBRL(fin2.totAtr):'–'}</td>
         </tr>`;
       }).join('');
       const card=document.createElement('div');
@@ -1740,7 +1791,7 @@ function gerarRel(){
         </div>
         <div class="tw" style="margin-top:12px">
           <table class="dt pt-compact">
-            <thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th><th>Total</th><th>H.Extra</th><th>Vl.Ext.25%</th><th>Atraso</th><th>Desc.Atr</th></tr></thead>
+            <thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Mnh.Ent</th><th>Mnh.Saí</th><th>Trd.Ent</th><th>Trd.Saí</th><th>Ext.Ent</th><th>Ext.Saí</th><th>Total</th><th>H.Extra</th><th>Vl.Ext.25%</th><th style="color:var(--red)">Atraso</th><th style="color:var(--red)">Desc.Atr</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
@@ -1830,20 +1881,21 @@ function gerarRel(){
         allRows+=`<tr ${rStyle}>
           <td style="font-size:.72rem;white-space:nowrap">${fmtD(data)} ${wday(data)}</td>
           <td><span class="sit sit-${sitKey}" style="font-size:.65rem">${reg.sit||'Normal'}</span></td>
-          <td class="mono">${reg.ent||'–'}</td><td class="mono">${reg.saAlm||'–'}</td>
-          <td class="mono">${reg.vaAlm||'–'}</td><td class="mono">${reg.sai||'–'}</td>
+          <td class="mono">${reg.mEnt||reg.ent||'–'}</td><td class="mono">${reg.mSai||reg.saAlm||'–'}</td>
+          <td class="mono">${reg.tEnt||reg.vaAlm||'–'}</td><td class="mono">${reg.tSai||reg.sai||'–'}</td>
+          <td class="mono">${reg.extEnt||'–'}</td><td class="mono">${reg.extSai||'–'}</td>
           <td class="td-trab">${c.trab>0?toHHMM(c.trab):'–'}</td>
           <td class="td-ext">${c.extra>0?toHHMM(c.extra):'–'}</td>
           <td class="td-val-ext">${c.extra>0?fmtBRL(fin2.totExt):'–'}</td>
-          <td class="td-atr">${c.atr>0?toHHMM(c.atr):'–'}</td>
-          <td class="td-val-atr">${c.atr>0?fmtBRL(fin2.totAtr):'–'}</td>
+          <td style="${c.atr>0?'color:var(--red);font-weight:700':''}">${c.atr>0?toHHMM(c.atr):'–'}</td>
+          <td style="${c.atr>0?'color:var(--red);font-weight:700':''}">${c.atr>0?fmtBRL(fin2.totAtr):'–'}</td>
           <td class="mono" style="font-size:.72rem;color:var(--ink3)">${func.nome.split(' ')[0]}</td>
         </tr>`;
       });
       // Sub-total do funcionário
       allRows+=`<tr style="background:var(--blue-l);font-weight:700">
         <td colspan="2" style="font-size:.72rem;color:var(--blue)">▶ Sub-total: ${func.nome.split(' ')[0]}</td>
-        <td colspan="4"></td>
+        <td colspan="6"></td>
         <td class="mono td-trab">${toHHMM(d.totT)}</td>
         <td class="mono td-ext">${d.totE>0?toHHMM(d.totE):'–'}</td>
         <td class="mono td-val-ext">${d.totE>0?fmtBRL(d.fin.totExt):'–'}</td>
@@ -1857,8 +1909,8 @@ function gerarRel(){
       <div class="tw" style="margin-top:12px">
         <table class="dt pt-compact">
           <thead><tr>
-            <th>Data/Dia</th><th>Situação</th><th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th>
-            <th>Total</th><th>H.Extra</th><th>Vl.Extra</th><th>Atraso</th><th>Desc.Atr</th><th>Func.</th>
+            <th>Data/Dia</th><th>Situação</th><th>Mnh.Ent</th><th>Mnh.Saí</th><th>Trd.Ent</th><th>Trd.Saí</th><th>Ext.Ent</th><th>Ext.Saí</th>
+            <th>Total</th><th>H.Extra</th><th>Vl.25%</th><th style="color:var(--red)">Atraso</th><th style="color:var(--red)">Desc.</th><th>Func.</th>
           </tr></thead>
           <tbody>${allRows}</tbody>
         </table>
