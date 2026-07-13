@@ -968,11 +968,12 @@ function calcDia(reg, f, data){
   // Minutos após 12:00 → sempre extra (adicional).
   if(isSatDay){
     const prev = jornadaSabMins(); // 300 min
-    // sem nenhum lançamento = falta
+    // SEM preenchimento = sem atraso, sem extra (sábado é opcional)
     if(mE===null && mS===null && tE===null && tS===null && xE===null && xS===null)
-      return {trab:0, extra:0, atr:prev, prev, isExtra:false};
-    // só entrada, sem saída = falta
-    if(mE!==null && mS===null && tS===null) return {trab:0, extra:0, atr:prev, prev, isExtra:false};
+      return {trab:0, extra:0, atr:0, prev, isExtra:false};
+    // só entrada, sem saída = sem cálculo (aguardando saída)
+    if(mE!==null && mS===null && tS===null)
+      return {trab:0, extra:0, atr:0, prev, isExtra:false};
     // Sábado: manhã (mEnt→mSai), extra após 12:00 vai para extEnt/extSai ou além de mSai
     const entSab = mE; // entrada manhã
     const saiSab = tS !== null ? tS : (mS !== null ? mS : null); // saída final
